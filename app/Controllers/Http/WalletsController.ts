@@ -10,7 +10,6 @@ import {
   generateDepositAddress,
   getAccountById,
   getTransactionsByAccount,
-  getTransactionsByLedger,
 } from '@tatumio/tatum'
 import { Country } from '@tatumio/tatum/dist/src/model/request/Country'
 import { SubscriptionType } from '@tatumio/tatum/dist/src/model/response/ledger/SubscriptionType'
@@ -104,7 +103,7 @@ export default class WalletsController {
 
       const newAddress: any = await generateDepositAddress(newAccount.id)
 
-      let addres = await newAcc.related('addresses').create({
+      await newAcc.related('addresses').create({
         address: newAddress.address,
         derivation_key: newAddress.derivationKey,
         xpub: newAddress.xpub,
@@ -166,7 +165,7 @@ export default class WalletsController {
       })
     }
 
-    let tatAccount = await getAccountById(wallet.tat_account_id)
+    let tatAccount: any = await getAccountById(wallet.tat_account_id)
 
     delete tatAccount.id
     delete tatAccount.xpub

@@ -142,9 +142,9 @@ export async function sendCrypto(
         return await sendBitcoinCashOffchainTransaction(isTest, { ...requiredData, ...utoxData })
       case 'trx':
         return await sendTronOffchainTransaction(isTest, { ...requiredData, ...utoxData })
-      // case 'trc10':
-      // case 'trc20':
-      //   // return await sendTronTrc10Transaction()
+        // case 'trc10':
+        // case 'trc20':
+        return await sendTronTrc10Transaction(isTest, { ...requiredData })
       case 'ltc':
         return await sendLitecoinOffchainTransaction(isTest, { ...requiredData, ...utoxData })
       case 'doge':
@@ -229,13 +229,13 @@ export async function internalAccountToAccountTransfer(
     privateKey: privateKey || null,
   }
 
-  const secret: any = decryptEncryption(wallet.secret)
+  // const secret: any = decryptEncryption(wallet.secret)
 
-  const secretData = {
-    account: wallet.address,
-    secret,
-    index: fromAddressData.derivation_key,
-  }
+  // const secretData = {
+  //   account: wallet.address,
+  //   secret,
+  //   index: fromAddressData.derivation_key,
+  // }
 
   const bscData: any = {
     // gasPrice: fee?.gasPrice?.toString(),
@@ -276,6 +276,7 @@ export async function internalAccountToAccountTransfer(
         })
 
         let bscTxRes = await bscTx.json()
+        return bscTxRes
       // return await sendBscOffchainTransaction(isTest, { ...requiredData, ...bscData })
       // case 'bnb':
       //   return await sendBnbOffchainTransaction({ ...requiredData, ...ercData })

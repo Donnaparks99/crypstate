@@ -3,7 +3,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Wallet from 'App/Models/Wallet'
 import fetch from 'node-fetch'
 import Env from '@ioc:Adonis/Core/Env'
-import { internalAccountToAccountTransfer, getFee, sendCrypto } from 'App/Services/Wallet'
+import { internalAccountToAccountTransfer, getFee } from 'App/Services/Wallet'
 
 export default class WebhooksController {
   public async index({ request }: HttpContextContract) {
