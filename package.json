@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "node ace build --production",
+    "build": "node ace build --ignore-ts-errors --production",
     "start": "node ace serve --watch",
     "start:prod": "node ./build/server.js",
     "dev": "node ace serve --watch",
