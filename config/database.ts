@@ -8,6 +8,10 @@
 import Env from '@ioc:Adonis/Core/Env'
 import { DatabaseConfig } from '@ioc:Adonis/Lucid/Database'
 
+import Url from ‘url-parse’
+
+const CLEARDB_DATABASE_URL = new Url(Env.get(‘CLEARDB_DATABASE_URL’))
+
 const databaseConfig: DatabaseConfig = {
   /*
   |--------------------------------------------------------------------------
@@ -48,6 +52,19 @@ const databaseConfig: DatabaseConfig = {
       healthCheck: false,
       debug: false,
     },
+
+    heroMysql: {
+      client: 'mysql',
+      connection: {
+        host: CLEARDB_DATABASE_URL.host as string,
+        port: Number(''),
+        user: CLEARDB_DATABASE_URL.username as string,
+        password: CLEARDB_DATABASE_URL.password as string,
+        database: CLEARDB_DATABASE_URL.pathname.substr(1) as string
+      },
+      healthCheck: false,
+    },
+
   },
 }
 
