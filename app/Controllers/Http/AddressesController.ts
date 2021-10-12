@@ -57,4 +57,60 @@ export default class AddressesController {
       data: newAdd,
     })
   }
+
+  public async getAddressBalance({ request, response }: HttpContextContract) {
+    var requestData = schema.create({
+      account_name: schema.string(),
+      currency: schema.string(),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    const account = await accountNameExist(request.all().account_name)
+
+    if (account['status'] === 'failed') {
+      return response.status(422).json(account)
+    }
+
+    const currency = await currencyExistInDb(request.all().currency)
+
+    if (currency['status'] === 'failed') {
+      return response.status(422).json(currency)
+    }
+  }
+
+  public async getWalletAddresses({ request, response }: HttpContextContract) {
+    var requestData = schema.create({
+      account_name: schema.string(),
+      currency: schema.string(),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    const account = await accountNameExist(request.all().account_name)
+
+    if (account['status'] === 'failed') {
+      return response.status(422).json(account)
+    }
+
+    const currency = await currencyExistInDb(request.all().currency)
+
+    if (currency['status'] === 'failed') {
+      return response.status(422).json(currency)
+    }
+  }
 }

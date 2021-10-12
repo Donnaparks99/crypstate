@@ -229,7 +229,7 @@ export async function internalAccountToAccountTransfer(
     privateKey: privateKey || null,
   }
 
-  // const secret: any = decryptEncryption(wallet.secret)
+  const secret: any = decryptEncryption(wallet.secret)
 
   // const secretData = {
   //   account: wallet.address,

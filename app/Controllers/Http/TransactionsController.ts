@@ -3,7 +3,17 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { accountNameExist, currencyExistInDb } from 'App/Services/Validation'
 import { getFee, sendCrypto, accountToAccountTransaction } from 'App/Services/Wallet'
 import Env from '@ioc:Adonis/Core/Env'
-import { getTransactionsByReference } from '@tatumio/tatum'
+import {
+  Currency,
+  generatePrivateKeyFromMnemonic,
+  getTransactionsByReference,
+  sendBscOffchainTransaction,
+  sendEthErc20OffchainTransaction,
+  sendEthOffchainTransaction,
+  sendXlmOffchainTransaction,
+  sendXrpOffchainTransaction,
+} from '@tatumio/tatum'
+import Encryption from '@ioc:Adonis/Core/Encryption'
 
 export default class TransactionsController {
   public async create({ request, response }: HttpContextContract) {
@@ -138,6 +148,130 @@ export default class TransactionsController {
       return response.status(401).json({
         status: 'failed',
         data: 'Unable to get transaction.',
+      })
+    }
+  }
+
+  public async addressToAddressTransfer({ request, response }: HttpContextContract) {
+    var requestData = schema.create({
+      account_name: schema.string(),
+      from_address: schema.string(),
+      to_address: schema.string(),
+      currency: schema.string(),
+      amount: schema.string(),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    const account = await accountNameExist(request.all().account_name)
+
+    if (account['status'] === 'failed') {
+      return response.status(422).json(account)
+    }
+
+    const currency = await currencyExistInDb(request.all().currency)
+
+    if (currency['status'] === 'failed') {
+      return response.status(422).json(currency)
+    }
+
+    let wallet = await account.related('wallets').query().where('currency_id', currency.id).first()
+
+    if (!wallet) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `Wallet not found.`,
+      })
+    }
+
+    let fromAddress = await wallet
+      .related('addresses')
+      .query()
+      .where('address', request.all().from_address)
+      .first()
+
+    let toAddress = await wallet
+      .related('addresses')
+      .query()
+      .where('address', request.all().to_address)
+      .first()
+
+    function decryptEncryption(key) {
+      return key
+        ? Encryption.child({
+            secret: Env.get(`CRYPTO_KEY`),
+          }).decrypt(key.toString())
+        : null
+    }
+
+    const isTest: boolean = account.environment === 'local' ? true : false
+    const mnemonic: any = decryptEncryption(wallet.mnemonic)
+    // const fromAddressPrivateKey: any = decryptEncryption(fromAddress.xpub)
+
+    const fromAddressPrivateKey: any = await generatePrivateKeyFromMnemonic(
+      Currency['ETH'],
+      isTest,
+      mnemonic,
+      fromAddress?.derivation_key
+    )
+
+    const requiredData = {
+      senderAccountId: wallet.tat_account_id,
+      address: toAddress.address,
+      amount: request.all().amount.toString(),
+      compliant: false,
+      senderNote: Math.random().toString(36).substring(2),
+    }
+
+    let fee = await getFee(currency, wallet, toAddress.address, request.all().amount.toString())
+
+    const ercData = {
+      // gasPrice: fee?.gasPrice?.toString(),
+      // gasLimit: fee?.gasLimit?.toString(),
+      mnemonic,
+      index: fromAddress?.derivation_key || null,
+      privateKey: fromAddressPrivateKey || null,
+      attr: null,
+    }
+
+    try {
+      switch (currency.token) {
+        // case 'trx':
+        // return await sendTronOffchainTransaction(isTest, { ...requiredData, ...utoxData })
+        // case 'trc10':
+        // case 'trc20':
+        // return await sendTronTrc10Transaction(isTest, { ...requiredData })
+
+        case 'eth':
+          return await sendEthOffchainTransaction(isTest, { ...requiredData, ...ercData })
+        case 'erc20':
+          return response.status(200).json({
+            status: 'success',
+            message: await sendEthErc20OffchainTransaction(isTest, { ...requiredData, ...ercData }),
+          })
+        // case 'xrp':
+        //   return await sendXrpOffchainTransaction(isTest, { ...requiredData, ...secretData })
+        // case 'xlm':
+        //   return await sendXlmOffchainTransaction(isTest, { ...requiredData, ...secretData })
+        case 'bsc':
+          return await sendBscOffchainTransaction(isTest, { ...requiredData, ...ercData })
+        default:
+          return response.status(401).json({
+            status: 'failed',
+            message: 'No address to address transfer for currency',
+          })
+      }
+    } catch (e) {
+      return response.status(401).json({
+        status: 'failed',
+        message: e?.response?.message ?? e?.message,
       })
     }
   }
