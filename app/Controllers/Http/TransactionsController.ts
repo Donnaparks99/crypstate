@@ -197,11 +197,25 @@ export default class TransactionsController {
       .where('address', request.all().from_address)
       .first()
 
+    if (!fromAddress) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `From address not found.`,
+      })
+    }
+
     let toAddress = await wallet
       .related('addresses')
       .query()
       .where('address', request.all().to_address)
       .first()
+
+    if (!toAddress) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `To address not found.`,
+      })
+    }
 
     function decryptEncryption(key) {
       return key
