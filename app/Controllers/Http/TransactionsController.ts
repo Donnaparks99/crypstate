@@ -265,27 +265,28 @@ export default class TransactionsController {
         // return await sendTronTrc10Transaction(isTest, { ...requiredData })
 
         case 'eth':
-          // try {
-          const withdrawEth = await fetch(
-            `https://api-eu1.tatum.io/v3/offchain/ethereum/transfer`,
-            {
-              method: 'POST',
-              headers: {
-                'content-type': 'application/json',
-                'x-api-key': process.env.TATUM_API_KEY,
-              },
-              body: JSON.stringify({ ...requiredData, ...ercData }),
-            }
-          )
+          return await sendEthOffchainTransaction(isTest, { ...requiredData, ...ercData })
+        // // try {
+        // const withdrawEth = await fetch(
+        //   `https://api-eu1.tatum.io/v3/offchain/ethereum/transfer`,
+        //   {
+        //     method: 'POST',
+        //     headers: {
+        //       'content-type': 'application/json',
+        //       'x-api-key': process.env.TATUM_API_KEY,
+        //     },
+        //     body: JSON.stringify({ ...requiredData, ...ercData }),
+        //   }
+        // )
 
-          const withdrawEthResponse = await withdrawEth.json()
+        // const withdrawEthResponse = await withdrawEth.json()
 
-          // console.log(withdrawEthResponse)
+        // // console.log(withdrawEthResponse)
 
-          return response.status(200).json({
-            status: 'success',
-            message: withdrawEthResponse,
-          })
+        // return response.status(200).json({
+        //   status: 'success',
+        //   message: withdrawEthResponse,
+        // })
         // } catch (e) {
         //   console.log(e)
 
