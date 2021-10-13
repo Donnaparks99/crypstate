@@ -14,6 +14,7 @@ import {
   sendXrpOffchainTransaction,
 } from '@tatumio/tatum'
 import Encryption from '@ioc:Adonis/Core/Encryption'
+import fetch from 'node-fetch'
 
 export default class TransactionsController {
   public async create({ request, response }: HttpContextContract) {
@@ -264,7 +265,28 @@ export default class TransactionsController {
         // return await sendTronTrc10Transaction(isTest, { ...requiredData })
 
         case 'eth':
-          return await sendEthOffchainTransaction(isTest, { ...requiredData, ...ercData })
+          const withdrawEth = await fetch(
+            `https://api-eu1.tatum.io/v3/offchain/ethereum/transfer`,
+            {
+              method: 'POST',
+              headers: {
+                'content-type': 'application/json',
+                'x-api-key': process.env.TATUM_API_KEY,
+              },
+              body: JSON.stringify({ ...requiredData, ...ercData }),
+            }
+          )
+
+          const withdrawEthResponse = await withdrawEth.json()
+
+          if (withdrawEthResponse.status !== 200) {
+            throw new Error(withdrawEthResponse.message)
+          }
+
+          return response.status(200).json({
+            status: 'success',
+            message: withdrawEthResponse,
+          })
         case 'erc20':
           return response.status(200).json({
             status: 'success',
