@@ -366,7 +366,7 @@ export async function accountToAccountTransaction(
     body: JSON.stringify({
       senderAccountId: senderAccountId,
       recipientAccountId: recipientAccountId,
-      amount: amount.toString(),
+      amount: amount,
       anonymous: false,
       compliant: false,
       recipientNote,
