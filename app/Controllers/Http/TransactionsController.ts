@@ -240,19 +240,19 @@ export default class TransactionsController {
     const requiredData = {
       senderAccountId: wallet.tat_account_id,
       address: toAddress.address,
-      amount: request.all().amount.toString(),
+      amount: request.all().amount,
       compliant: false,
       senderNote: Math.random().toString(36).substring(2),
     }
 
-    let fee = await getFee(currency, wallet, toAddress.address, request.all().amount.toString())
+    let fee = await getFee(currency, wallet, toAddress.address, request.all().amount)
 
     const ercData = {
-      gasPrice: fee?.gasPrice?.toString(),
-      gasLimit: fee?.gasLimit?.toString(),
+      // gasPrice: fee?.gasPrice?.toString(),
+      // gasLimit: fee?.gasLimit?.toString(),
       mnemonic,
       index: fromAddress?.derivation_key || null,
-      privateKey: fromAddressPrivateKey || null,
+      // privateKey: fromAddressPrivateKey || null,
       attr: null,
     }
 
@@ -265,6 +265,7 @@ export default class TransactionsController {
         // return await sendTronTrc10Transaction(isTest, { ...requiredData })
 
         case 'eth':
+          // try {
           const withdrawEth = await fetch(
             `https://api-eu1.tatum.io/v3/offchain/ethereum/transfer`,
             {
@@ -279,14 +280,29 @@ export default class TransactionsController {
 
           const withdrawEthResponse = await withdrawEth.json()
 
-          if (withdrawEthResponse.status !== 200) {
-            throw new Error(withdrawEthResponse.message)
-          }
+          // console.log(withdrawEthResponse)
 
           return response.status(200).json({
             status: 'success',
             message: withdrawEthResponse,
           })
+        // } catch (e) {
+        //   console.log(e)
+
+        //   return response.status(200).json({
+        //     status: 'success',
+        //     message: e,
+        //   })
+        // }
+
+        // if (withdrawEthResponse.status !== 200) {
+        //   throw new Error(withdrawEthResponse.message)
+        // }
+
+        // return response.status(200).json({
+        //   status: 'success',
+        //   message: 'withdrawEthResponse',
+        // })
         case 'erc20':
           return response.status(200).json({
             status: 'success',
