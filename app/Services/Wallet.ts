@@ -72,21 +72,21 @@ export async function sendCrypto(
           amount = amount - withdrawalFee
       }
 
-      await accountToAccountTransaction(
-        wallet.tat_account_id,
-        managerWallet?.tat_account_id,
-        withdrawalFee.toString(),
-        account.name + ' wif'
-      )
+      // await accountToAccountTransaction(
+      //   wallet.tat_account_id,
+      //   managerWallet?.tat_account_id,
+      //   withdrawalFee.toString(),
+      //   account.name + ' wif'
+      // )
     }
 
     if (cutAmount > 0) {
-      await accountToAccountTransaction(
-        wallet.tat_account_id,
-        managerWallet?.tat_account_id,
-        cutAmount.toString(),
-        account.name + ' ct'
-      )
+      // await accountToAccountTransaction(
+      //   wallet.tat_account_id,
+      //   managerWallet?.tat_account_id,
+      //   cutAmount.toString(),
+      //   account.name + ' ct'
+      // )
     }
   }
 
@@ -114,6 +114,7 @@ export async function sendCrypto(
   }
 
   const privateKey: any = decryptEncryption(wallet.xpub)
+
   const ercData = {
     gasPrice: fee?.gasPrice?.toString(),
     gasLimit: fee?.gasLimit?.toString(),

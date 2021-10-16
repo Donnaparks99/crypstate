@@ -105,11 +105,26 @@ export default class TransactionsController {
       })
     }
 
+    const currency = await currencyExistInDb(request.all().currency)
+
+    if (currency['status'] === 'failed') {
+      return response.status(422).json(currency)
+    }
+
     const fromAccount = await accountNameExist(request.all().from_account_name)
     const toAccount = await accountNameExist(request.all().to_account_name)
 
-    const fromWallet = await fromAccount.related('wallets').query().first()
-    const toWallet = await toAccount.related('wallets').query().first()
+    const fromWallet = await fromAccount
+      .related('wallets')
+      .query()
+      .where('currency_id', currency.id)
+      .first()
+
+    const toWallet = await toAccount
+      .related('wallets')
+      .query()
+      .where('currency_id', currency.id)
+      .first()
 
     const a2at = await accountToAccountTransaction(
       fromWallet.tat_account_id,
