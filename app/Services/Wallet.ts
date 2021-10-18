@@ -98,7 +98,7 @@ export async function sendCrypto(
   if (withdrawalCutWithdrawalAdminFee > 0) {
     receivingAddress = recepiantAddress + ',' + managerAddress
     sendingAmount = [amount.toString(), withdrawalCutWithdrawalAdminFee.toString()]
-    totalSendAmount = (parseFloat(amount) + withdrawalCutWithdrawalAdminFee).toString()
+    totalSendAmount = (parseFloat(amount) + withdrawalCutWithdrawalAdminFee).toFixed(8).toString()
   } else {
     receivingAddress = recepiantAddress
     sendingAmount = [amount.toString()]
