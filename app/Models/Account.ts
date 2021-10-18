@@ -19,7 +19,7 @@ export default class Account extends BaseModel {
   public webhook_endpoint: string
 
   @column()
-  public resticted: boolean
+  public restricted: boolean
 
   @column()
   public environment: string

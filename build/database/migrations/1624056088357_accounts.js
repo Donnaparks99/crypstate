@@ -16,7 +16,7 @@ class Accounts extends Schema_1.default {
             table.string('name').unique();
             table.string('url').unique();
             table.string('webhook_endpoint');
-            table.boolean('resticted').defaultTo(0);
+            table.boolean('restricted').defaultTo(0);
             table.string('environment').defaultTo('production');
             table.timestamps(true);
         });

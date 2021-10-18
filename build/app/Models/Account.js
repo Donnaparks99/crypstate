@@ -40,7 +40,7 @@ __decorate([
 __decorate([
     Orm_1.column(),
     __metadata("design:type", Boolean)
-], Account.prototype, "resticted", void 0);
+], Account.prototype, "restricted", void 0);
 __decorate([
     Orm_1.column(),
     __metadata("design:type", String)

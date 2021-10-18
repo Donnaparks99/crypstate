@@ -41,6 +41,13 @@ export default class TransactionsController {
       return response.status(422).json(account)
     }
 
+    if (account.restricted) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `Unable to withdraw! Please try again later or contact support.`,
+      })
+    }
+
     const currency = await currencyExistInDb(request.all().currency)
 
     if (currency['status'] === 'failed') {
