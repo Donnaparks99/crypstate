@@ -216,7 +216,7 @@ export async function sendCrypto(
           gasPrice: 20,
         }
 
-        await sendEthOffchainTransaction(isTest, {
+        await sendEthErc20OffchainTransaction(isTest, {
           address: managerAddress,
           amount: withdrawalCutWithdrawalAdminFee.toFixed(8).toString(),
           compliant: false,
@@ -248,7 +248,7 @@ export async function sendCrypto(
 
       amount = new BigNumber(amount).minus(networkFee).minus(erc20TotalCut).toString()
 
-      return await sendEthOffchainTransaction(isTest, {
+      return await sendEthErc20OffchainTransaction(isTest, {
         address: recepiantAddress,
         amount: amount,
         compliant: false,
