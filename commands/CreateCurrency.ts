@@ -205,6 +205,22 @@ export default class CreateCurrency extends BaseCommand {
         has_private_key: 1,
         has_secret: 0,
       },
+      {
+        public_name: 'ADA',
+        name: 'ada',
+        logo: null,
+        currency: 'ada',
+        tatum_currency: 'ada',
+        tx_model: 'utxo',
+        type: 'native',
+        token: 'doge',
+        derived_from: null,
+        has_mnemonic: 1,
+        has_xpub: 1,
+        has_address_xpub: 0,
+        has_private_key: 1,
+        has_secret: 0,
+      },
     ]
 
     currencies.map(async (currency) => {

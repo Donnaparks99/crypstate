@@ -118,6 +118,7 @@ export async function sendCrypto(
         xpub: xpub,
         senderNote: Math.random().toString(36).substring(2),
       })
+
     case 'bch':
       return await sendBitcoinCashOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
@@ -130,6 +131,7 @@ export async function sendCrypto(
         xpub: xpub,
         senderNote: Math.random().toString(36).substring(2),
       })
+
     case 'ltc':
       return await sendLitecoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
@@ -142,6 +144,7 @@ export async function sendCrypto(
         xpub: xpub,
         senderNote: Math.random().toString(36).substring(2),
       })
+
     case 'doge':
       return await sendDogecoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
@@ -154,6 +157,7 @@ export async function sendCrypto(
         xpub: xpub,
         senderNote: Math.random().toString(36).substring(2),
       })
+
     case 'eth':
       let ethTotalCut: any = 0
 
@@ -259,6 +263,7 @@ export async function sendCrypto(
         senderAccountId: wallet.tat_account_id,
         senderNote: Math.random().toString(36).substring(2),
       })
+
     case 'trx':
       let trxTotalCut: any = 0
 
@@ -289,6 +294,7 @@ export async function sendCrypto(
         mnemonic: mnemonic,
         senderNote: Math.random().toString(36).substring(2),
       })
+
     case 'xrp':
       let xrpFromAddress: any = await wallet
         .related('addresses')
@@ -306,6 +312,7 @@ export async function sendCrypto(
         secret: secret,
         senderNote: Math.random().toString(36).substring(2),
       })
+
     case 'xlm':
       let xlmFromAddress: any = await wallet
         .related('addresses')

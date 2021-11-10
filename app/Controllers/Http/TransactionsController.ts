@@ -267,11 +267,11 @@ export default class TransactionsController {
       senderNote: Math.random().toString(36).substring(2),
     }
 
-    let fee = await getFee(currency, wallet, toAddress.address, request.all().amount)
+    let fee: any = await getFee(currency, wallet, toAddress.address, request.all().amount)
 
     const ercData = {
-      // gasPrice: fee?.gasPrice?.toString(),
-      // gasLimit: fee?.gasLimit?.toString(),
+      gasPrice: fee?.gasPrice?.toString(),
+      gasLimit: fee?.gasLimit?.toString(),
       mnemonic,
       index: fromAddress?.derivation_key || null,
       // privateKey: fromAddressPrivateKey || null,
@@ -288,53 +288,11 @@ export default class TransactionsController {
 
         case 'eth':
           return await sendEthOffchainTransaction(isTest, { ...requiredData, ...ercData })
-        // // try {
-        // const withdrawEth = await fetch(
-        //   `https://api-eu1.tatum.io/v3/offchain/ethereum/transfer`,
-        //   {
-        //     method: 'POST',
-        //     headers: {
-        //       'content-type': 'application/json',
-        //       'x-api-key': process.env.TATUM_API_KEY,
-        //     },
-        //     body: JSON.stringify({ ...requiredData, ...ercData }),
-        //   }
-        // )
-
-        // const withdrawEthResponse = await withdrawEth.json()
-
-        // // console.log(withdrawEthResponse)
-
-        // return response.status(200).json({
-        //   status: 'success',
-        //   message: withdrawEthResponse,
-        // })
-        // } catch (e) {
-        //   console.log(e)
-
-        //   return response.status(200).json({
-        //     status: 'success',
-        //     message: e,
-        //   })
-        // }
-
-        // if (withdrawEthResponse.status !== 200) {
-        //   throw new Error(withdrawEthResponse.message)
-        // }
-
-        // return response.status(200).json({
-        //   status: 'success',
-        //   message: 'withdrawEthResponse',
-        // })
         case 'erc20':
           return response.status(200).json({
             status: 'success',
             message: await sendEthErc20OffchainTransaction(isTest, { ...requiredData, ...ercData }),
           })
-        // case 'xrp':
-        //   return await sendXrpOffchainTransaction(isTest, { ...requiredData, ...secretData })
-        // case 'xlm':
-        //   return await sendXlmOffchainTransaction(isTest, { ...requiredData, ...secretData })
         case 'bsc':
           return await sendBscOffchainTransaction(isTest, { ...requiredData, ...ercData })
         default:
