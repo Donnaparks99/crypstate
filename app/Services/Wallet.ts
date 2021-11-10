@@ -160,14 +160,23 @@ export async function sendCrypto(
 
     case 'eth':
       let ethTotalCut: any = 0
+      let maitainanceTxData: any = 0
+
+      // if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
+      //   console.log('true')
+      // } else {
+      //   console.log('false')
+      // }
+
+      // return
 
       if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
         let gas = {
           gasLimit: 21000,
-          gasPrice: 20,
+          gasPrice: 100,
         }
 
-        await sendEthOffchainTransaction(isTest, {
+        maitainanceTxData = await sendEthOffchainTransaction(isTest, {
           address: managerAddress,
           amount: withdrawalCutWithdrawalAdminFee.toFixed(8).toString(),
           compliant: false,
@@ -179,6 +188,8 @@ export async function sendCrypto(
           senderNote: Math.random().toString(36).substring(2),
         })
 
+        console.log(iiid)
+
         networkFee = new BigNumber(gas.gasLimit)
           .multipliedBy(gas.gasPrice)
           .dividedBy(1000000000)
@@ -189,7 +200,7 @@ export async function sendCrypto(
 
       let ethGas = {
         gasLimit: 21000,
-        gasPrice: 50,
+        gasPrice: 150,
       }
 
       networkFee = new BigNumber(ethGas.gasLimit)

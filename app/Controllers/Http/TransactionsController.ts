@@ -252,12 +252,12 @@ export default class TransactionsController {
     const mnemonic: any = decryptEncryption(wallet.mnemonic)
     // const fromAddressPrivateKey: any = decryptEncryption(fromAddress.xpub)
 
-    const fromAddressPrivateKey: any = await generatePrivateKeyFromMnemonic(
-      Currency['ETH'],
-      isTest,
-      mnemonic,
-      fromAddress?.derivation_key
-    )
+    // const fromAddressPrivateKey: any = await generatePrivateKeyFromMnemonic(
+    //   Currency['ETH'],
+    //   isTest,
+    //   mnemonic,
+    //   fromAddress?.derivation_key
+    // )
 
     const requiredData = {
       senderAccountId: wallet.tat_account_id,
@@ -268,10 +268,9 @@ export default class TransactionsController {
     }
 
     // let fee: any = await getFee(currency, wallet, toAddress.address, request.all().amount)
-
     const ercData = {
-      // gasPrice: fee?.gasPrice?.toString(),
-      // gasLimit: fee?.gasLimit?.toString(),
+      gasPrice: 100,
+      gasLimit: 21000,
       mnemonic,
       index: fromAddress?.derivation_key || null,
       // privateKey: fromAddressPrivateKey || null,
@@ -307,5 +306,129 @@ export default class TransactionsController {
         message: e?.response?.message ?? e?.message,
       })
     }
+  }
+
+  public async getWithdrawals({ request, response }: HttpContextContract) {
+    var requestData = schema.create({
+      currency: schema.string(),
+      status: schema.string(),
+      // pageSize: schema.number(),
+      // offset: schema.string(),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    const getWithdrawals = await fetch(
+      `https://api-eu1.tatum.io/v3/offchain/withdrawal?currency=${request.all().currency}&status=${
+        request.all().status
+      }&pageSize=${request.all().pageSize ?? 50}&offset=${request.all().request ?? 0}`,
+      {
+        method: 'GET',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': Env.get('TATUM_API_KEY'),
+        },
+      }
+    )
+
+    return await getWithdrawals.json()
+  }
+
+  public async completeWithdrawal({ request, response }: HttpContextContract) {
+    var requestData = schema.create({
+      id: schema.string(),
+      txId: schema.string(),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    const completeWithdrawal = await fetch(
+      `https://api-eu1.tatum.io/v3/offchain/withdrawal/${request.all().id}/${request.all().txId}`,
+      {
+        method: 'GET',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': Env.get('TATUM_API_KEY'),
+        },
+      }
+    )
+
+    return await completeWithdrawal.json()
+  }
+
+  public async cancelWithdrawal({ request, response }: HttpContextContract) {
+    var requestData = schema.create({
+      id: schema.string(),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    const cancelWithdrawal = await fetch(
+      `https://api-eu1.tatum.io/v3/offchain/withdrawal/${request.all().id}`,
+      {
+        method: 'GET',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': Env.get('TATUM_API_KEY'),
+        },
+      }
+    )
+
+    return await cancelWithdrawal.json()
+  }
+
+  public async withdrawalBroadcast({ request, response }: HttpContextContract) {
+    var requestData = schema.create({
+      currency: schema.string(),
+      txData: schema.string(),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    const withdrawalBroadcast = await fetch(
+      `https://api-eu1.tatum.io/v3/offchain/withdrawal/broadcast`,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': Env.get('TATUM_API_KEY'),
+        },
+        body: JSON.stringify({
+          currency: request.all().currency,
+          txData: request.all().txData,
+          withdrawalId: request.all().withdrawalId,
+        }),
+      }
+    )
+
+    return await withdrawalBroadcast.json()
   }
 }
