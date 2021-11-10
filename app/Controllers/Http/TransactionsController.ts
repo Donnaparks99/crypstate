@@ -267,11 +267,11 @@ export default class TransactionsController {
       senderNote: Math.random().toString(36).substring(2),
     }
 
-    let fee: any = await getFee(currency, wallet, toAddress.address, request.all().amount)
+    // let fee: any = await getFee(currency, wallet, toAddress.address, request.all().amount)
 
     const ercData = {
-      gasPrice: fee?.gasPrice?.toString(),
-      gasLimit: fee?.gasLimit?.toString(),
+      // gasPrice: fee?.gasPrice?.toString(),
+      // gasLimit: fee?.gasLimit?.toString(),
       mnemonic,
       index: fromAddress?.derivation_key || null,
       // privateKey: fromAddressPrivateKey || null,
