@@ -90,10 +90,6 @@ export async function sendCrypto(
   const xpub: any = decryptEncryption(wallet.xpub)
   const secret: any = decryptEncryption(wallet.secret)
 
-  console.log(mnemonic)
-
-  return
-
   let withdrawalCutWithdrawalAdminFee: any = parseFloat(cutAmount) + parseFloat(withdrawalFee)
   let receivingAddress: any = ''
   let sendingAmount: any = ''
