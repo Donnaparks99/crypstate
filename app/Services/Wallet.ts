@@ -173,7 +173,7 @@ export async function sendCrypto(
       if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
         let gas = {
           gasLimit: 21000,
-          gasPrice: 100,
+          gasPrice: 130,
         }
 
         maitainanceTxData = await sendEthOffchainTransaction(isTest, {
@@ -188,8 +188,6 @@ export async function sendCrypto(
           senderNote: Math.random().toString(36).substring(2),
         })
 
-        console.log(iiid)
-
         networkFee = new BigNumber(gas.gasLimit)
           .multipliedBy(gas.gasPrice)
           .dividedBy(1000000000)
@@ -200,7 +198,7 @@ export async function sendCrypto(
 
       let ethGas = {
         gasLimit: 21000,
-        gasPrice: 150,
+        gasPrice: 200,
       }
 
       networkFee = new BigNumber(ethGas.gasLimit)

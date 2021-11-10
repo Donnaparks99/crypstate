@@ -269,7 +269,7 @@ export default class TransactionsController {
 
     // let fee: any = await getFee(currency, wallet, toAddress.address, request.all().amount)
     const ercData = {
-      gasPrice: 100,
+      gasPrice: 150,
       gasLimit: 21000,
       mnemonic,
       index: fromAddress?.derivation_key || null,
