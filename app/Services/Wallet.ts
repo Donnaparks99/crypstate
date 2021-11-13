@@ -84,8 +84,6 @@ export async function sendCrypto(
     amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
   }
 
-  // return networkFee
-
   const mnemonic: any = decryptEncryption(wallet.mnemonic)
   const xpub: any = decryptEncryption(wallet.xpub)
   const secret: any = decryptEncryption(wallet.secret)
