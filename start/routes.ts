@@ -38,8 +38,8 @@ Route.post('get/wallet/transactions', 'WalletsController.getWalletTransactions')
 
 //Address
 Route.post('/create/address', 'AddressesController.create')
-Route.get('/get/address/balance', 'AddressesController.getAddressBalance')
-Route.get('/get/wallet/addresses', 'AddressesController.getWalletAddresses')
+Route.post('/get/address/balance', 'AddressesController.getAddressBalance')
+Route.post('/get/wallet/addresses', 'AddressesController.getWalletAddresses')
 
 //Transaction
 Route.get('/get/withdrawals', 'TransactionsController.getWithdrawals')

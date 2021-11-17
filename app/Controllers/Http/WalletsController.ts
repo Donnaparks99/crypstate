@@ -13,14 +13,15 @@ import {
 } from '@tatumio/tatum'
 import { Country } from '@tatumio/tatum/dist/src/model/request/Country'
 import { SubscriptionType } from '@tatumio/tatum/dist/src/model/response/ledger/SubscriptionType'
-import Env from '@ioc:Adonis/Core/Env'
 
 export default class WalletsController {
   public async create({ request, response }: HttpContextContract) {
     var requestData = schema.create({
       account_name: schema.string(),
       currency: schema.string(),
-      webhook_url: schema.string.optional({}, [rules.url()]),
+      webhook_url: schema.string.optional({}, [rules.url({
+        protocols: ['http', 'https'],
+      })]),
     })
 
     try {
@@ -76,7 +77,7 @@ export default class WalletsController {
       if (request.all().webhook_url?.length > 1) {
         var webhookUrl: any = request.all().webhook_url
       } else {
-        var webhookUrl: any = Env.get('APP_URL') + Route.makeUrl('tatumWebhook')
+        var webhookUrl: any = account?.url + account?.webhook_endpoint
       }
 
       const subscription = await createNewSubscription({

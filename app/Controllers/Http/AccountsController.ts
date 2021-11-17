@@ -1,5 +1,5 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { schema } from '@ioc:Adonis/Core/Validator'
+import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import Account from 'App/Models/Account'
 
 export default class AccountsController {
@@ -7,7 +7,9 @@ export default class AccountsController {
     var requestData = schema.create({
       display_name: schema.string(),
       name: schema.string(),
-      url: schema.string(),
+      url: schema.string({}, [rules.url({
+        protocols: ['http', 'https'],
+      })]),
       webhook_endpoint: schema.string(),
       environment: schema.string.optional(),
     })

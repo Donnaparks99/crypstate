@@ -23,6 +23,8 @@ export default class TransactionsController {
       currency: schema.string(),
       amount: schema.number(),
       toAddress: schema.string(),
+      memoTag: schema.string.optional(),
+      cutAmount: schema.string.optional()
     })
 
     try {
@@ -311,7 +313,9 @@ export default class TransactionsController {
   public async getWithdrawals({ request, response }: HttpContextContract) {
     var requestData = schema.create({
       currency: schema.string(),
-      status: schema.string(),
+      status: schema.enum(
+        ['InProgress', 'Done', 'Cancelled'] as const
+      )
       // pageSize: schema.number(),
       // offset: schema.string(),
     })
