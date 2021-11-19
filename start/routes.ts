@@ -27,6 +27,9 @@ Route.get('/', async () => {
 
 //Webhook
 Route.post('/tatum/webhook', 'WebhooksController.index').as('tatumWebhook')
+Route.post('/recreate/subscription', 'WebhooksController.recreateSubscription')
+Route.post('/delete/subscription', 'WebhooksController.deleteSubscription')
+Route.post('/list/subscription', 'WebhooksController.listSubscription')
 
 //Account
 Route.post('/create/account', 'AccountsController.create')

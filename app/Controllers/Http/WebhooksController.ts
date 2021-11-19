@@ -3,10 +3,19 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Wallet from 'App/Models/Wallet'
 import fetch from 'node-fetch'
 import Env from '@ioc:Adonis/Core/Env'
+import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import { internalAccountToAccountTransfer, getFee } from 'App/Services/Wallet'
+import {
+  SubscriptionType,
+  createNewSubscription,
+  listActiveSubscriptions,
+  cancelExistingSubscription,
+  obtainReportForSubscription,
+} from '@tatumio/tatum'
+import { accountNameExist, currencyExistInDb } from 'App/Services/Validation'
 
 export default class WebhooksController {
-  public async index({ request }: HttpContextContract) {
+  public async index({ request, response }: HttpContextContract) {
     const wallet = await Wallet.findBy('tat_account_id', request.all().accountId)
 
     if (wallet) {
@@ -65,4 +74,58 @@ export default class WebhooksController {
       console.log('object')
     }
   }
+
+  public async recreateSubscription({ request, response }: HttpContextContract) {
+
+    var requestData = schema.create({
+      account_name: schema.string(),
+      currency: schema.string(),
+      webhook_url: schema.string.optional({}, [rules.url({
+        protocols: ['http', 'https'],
+      })]),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    const account = await accountNameExist(request.all().account_name)
+
+    if (account['status'] === 'failed') {
+      return response.status(422).json(account)
+    }
+
+    const currency = await currencyExistInDb(request.all().currency)
+
+    if (currency['status'] === 'failed') {
+      return response.status(422).json(currency)
+    }
+
+    let wallet = await account.related('wallets').query().where('currency_id', currency.id).first()
+
+    await cancelExistingSubscription(wallet.webhook_id)
+
+    const subscription = await createNewSubscription({
+      type: SubscriptionType.ACCOUNT_INCOMING_BLOCKCHAIN_TRANSACTION,
+      attr: {
+        id: wallet.tat_account_id,
+        url: request.all().webhook_url,
+      },
+    })
+
+    await wallet.update({
+      webhook_id: subscription.id
+    })
+
+    return response.status(200).json(subscription)
+  }
+
+  public async deleteSubscription({ request }: HttpContextContract) {}
+
+  public async listSubscription({ request }: HttpContextContract) {}
 }
