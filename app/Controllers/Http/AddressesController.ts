@@ -112,5 +112,9 @@ export default class AddressesController {
     if (currency['status'] === 'failed') {
       return response.status(422).json(currency)
     }
+
+    let wallet = await account.related('wallets')?.query().where('currency_id', currency.id).first()
+
+    return await wallet?.related('addresses').query().get()
   }
 }

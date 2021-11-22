@@ -5,6 +5,7 @@ import Currency from './Currency'
 import Env from '@ioc:Adonis/Core/Env'
 import Encryption from '@ioc:Adonis/Core/Encryption'
 import Address from './Address'
+import ManagerDueFee from './ManagerDueFee'
 
 export default class Wallet extends BaseModel {
   @column({ isPrimary: true })
@@ -99,4 +100,7 @@ export default class Wallet extends BaseModel {
 
   @hasMany(() => Address, { foreignKey: 'wallet_id' })
   public addresses: HasMany<typeof Address>
+
+  @hasMany(() => ManagerDueFee, { foreignKey: 'wallet_id' })
+  public due_fee: HasMany<typeof ManagerDueFee>
 }

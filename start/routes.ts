@@ -44,6 +44,7 @@ Route.post('get/wallet/transactions', 'WalletsController.getWalletTransactions')
 Route.post('/create/address', 'AddressesController.create')
 Route.post('/get/address/balance', 'AddressesController.getAddressBalance')
 Route.post('/get/wallet/addresses', 'AddressesController.getWalletAddresses')
+Route.post('/address/to/address/transfer', 'TransactionsController.addressToAddressTransfer')
 
 //Transaction
 Route.get('/get/withdrawals', 'TransactionsController.getWithdrawals')
@@ -52,5 +53,4 @@ Route.post('/cancel/withdrawal', 'TransactionsController.cancelWithdrawal')
 Route.post('/withdrawal/broadcast', 'TransactionsController.withdrawalBroadcast')
 Route.post('/internal/transfer', 'TransactionsController.internalTransfer')
 Route.post('/create/withdrawal/transaction', 'TransactionsController.create')
-Route.post('/address/to/address/transfer', 'TransactionsController.addressToAddressTransfer')
 Route.post('/get/transaction/reference', 'TransactionsController.getTransactionWithReference')

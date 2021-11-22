@@ -15,6 +15,7 @@ import {
 } from '@tatumio/tatum'
 import Encryption from '@ioc:Adonis/Core/Encryption'
 import fetch from 'node-fetch'
+import BigNumber from 'bignumber.js'
 
 export default class TransactionsController {
   public async create({ request, response }: HttpContextContract) {
@@ -229,18 +230,20 @@ export default class TransactionsController {
       })
     }
 
-    let toAddress = await wallet
-      .related('addresses')
-      .query()
-      .where('address', request.all().to_address)
-      .first()
+    // let toAddress = await wallet
+    //   .related('addresses')
+    //   .query()
+    //   .where('address', request.all().to_address)
+    //   .first()
 
-    if (!toAddress) {
-      return response.status(422).json({
-        status: 'failed',
-        message: `To address not found.`,
-      })
-    }
+    // if (!toAddress) {
+    //   return response.status(422).json({
+    //     status: 'failed',
+    //     message: `To address not found.`,
+    //   })
+    // }
+
+    let toAddress = request.all().to_address;
 
     function decryptEncryption(key) {
       return key
@@ -263,7 +266,7 @@ export default class TransactionsController {
 
     const requiredData = {
       senderAccountId: wallet.tat_account_id,
-      address: toAddress.address,
+      address: toAddress,
       amount: request.all().amount,
       compliant: false,
       senderNote: Math.random().toString(36).substring(2),
@@ -271,13 +274,22 @@ export default class TransactionsController {
 
     // let fee: any = await getFee(currency, wallet, toAddress.address, request.all().amount)
     const ercData = {
-      gasPrice: 150,
-      gasLimit: 21000,
       mnemonic,
       index: fromAddress?.derivation_key || null,
-      // privateKey: fromAddressPrivateKey || null,
       attr: null,
     }
+
+    const ercGas = {
+      gasPrice: "150",
+      gasLimit: "21000",
+    }
+
+    const bscGas = {
+      gasPrice: "5",
+      gasLimit: "21000",
+    }
+
+    let gasFee:any = 0
 
     try {
       switch (currency.token) {
@@ -288,14 +300,43 @@ export default class TransactionsController {
         // return await sendTronTrc10Transaction(isTest, { ...requiredData })
 
         case 'eth':
-          return await sendEthOffchainTransaction(isTest, { ...requiredData, ...ercData })
+
+          gasFee = new BigNumber(ercGas.gasLimit)
+            .multipliedBy(ercGas.gasPrice)
+            .dividedBy(1000000000)
+            .toFixed(9)
+
+            requiredData['amount'] = (parseFloat(requiredData['amount']) - parseFloat(gasFee)).toString()
+            
+          try {
+            return response.status(200).json({
+              status: 'success',
+              data: await sendEthOffchainTransaction(isTest, { ...requiredData, ...ercData, ...ercGas })
+            })
+          } catch (e) {
+            return e
+          }
         case 'erc20':
+          gasFee = new BigNumber(ercGas.gasLimit)
+            .multipliedBy(ercGas.gasPrice)
+            .dividedBy(1000000000)
+            .toFixed(9)
+
+            requiredData['amount'] = (parseFloat(requiredData['amount']) - parseFloat(gasFee)).toString()
+
           return response.status(200).json({
             status: 'success',
-            message: await sendEthErc20OffchainTransaction(isTest, { ...requiredData, ...ercData }),
+            message: await sendEthErc20OffchainTransaction(isTest, { ...requiredData, ...ercData, ...ercGas }),
           })
         case 'bsc':
-          return await sendBscOffchainTransaction(isTest, { ...requiredData, ...ercData })
+          gasFee = new BigNumber(bscGas.gasLimit)
+            .multipliedBy(bscGas.gasPrice)
+            .dividedBy(1000000000)
+            .toFixed(9)
+
+            requiredData['amount'] = (parseFloat(requiredData['amount']) - parseFloat(gasFee)).toString()
+
+          return await sendBscOffchainTransaction(isTest, { ...requiredData, ...ercData, ...bscGas })
         default:
           return response.status(401).json({
             status: 'failed',

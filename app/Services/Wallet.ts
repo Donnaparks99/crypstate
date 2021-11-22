@@ -23,6 +23,8 @@ import Encryption from '@ioc:Adonis/Core/Encryption'
 import Currency from 'App/Models/Currency'
 import fetch from 'node-fetch'
 import { BigNumber } from 'bignumber.js'
+import ManagerDueFee from 'App/Models/ManagerDueFee'
+import { accountNameExist } from './Validation'
 
 type WithdrawBnbType = {
   senderAccountId: string
@@ -160,43 +162,39 @@ export async function sendCrypto(
       let ethTotalCut: any = 0
       let maitainanceTxData: any = 0
 
-      // if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
-      //   console.log('true')
-      // } else {
-      //   console.log('false')
-      // }
-
-      // return
-
       if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
-        let gas = {
-          gasLimit: 21000,
-          gasPrice: 130,
+
+        const dueFeeAccount = await accountNameExist("due-fee")
+
+        if(dueFeeAccount['status'] !== "failed") {
+
+          const dueFeeWallet = await dueFeeAccount
+            .related('wallets')
+            .query()
+            .where('currency_id', currency.id)
+            .first()
+
+          await accountToAccountTransaction(
+            wallet.id,
+            dueFeeWallet.tat_account_id,
+            withdrawalCutWithdrawalAdminFee.toString(),
+            'Transfer'
+          )
+
+          ManagerDueFee.create({
+            wallet_id: wallet.id,
+            amount: withdrawalCutWithdrawalAdminFee
+          });
+
+          ethTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee)
+
         }
 
-        maitainanceTxData = await sendEthOffchainTransaction(isTest, {
-          address: managerAddress,
-          amount: withdrawalCutWithdrawalAdminFee.toFixed(8).toString(),
-          compliant: false,
-          index: 1,
-          gasPrice: gas.gasPrice.toString(),
-          gasLimit: gas.gasLimit.toString(),
-          mnemonic: mnemonic,
-          senderAccountId: wallet.tat_account_id,
-          senderNote: Math.random().toString(36).substring(2),
-        })
-
-        networkFee = new BigNumber(gas.gasLimit)
-          .multipliedBy(gas.gasPrice)
-          .dividedBy(1000000000)
-          .toFixed(9)
-
-        ethTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee) + parseFloat(networkFee)
       }
 
       let ethGas = {
-        gasLimit: 21000,
-        gasPrice: 200,
+        gasLimit: "21000",
+        gasPrice: "200",
       }
 
       networkFee = new BigNumber(ethGas.gasLimit)
@@ -206,45 +204,76 @@ export async function sendCrypto(
 
       amount = new BigNumber(amount).minus(networkFee).minus(ethTotalCut).toString()
 
-      return await sendEthOffchainTransaction(isTest, {
-        address: recepiantAddress,
-        amount: amount,
-        compliant: false,
-        index: 1,
-        gasPrice: ethGas.gasPrice.toString(),
-        gasLimit: ethGas.gasLimit.toString(),
-        mnemonic: mnemonic,
-        senderAccountId: wallet.tat_account_id,
-        senderNote: Math.random().toString(36).substring(2),
-      })
+      try {
+        return await sendEthOffchainTransaction(isTest, {
+          address: recepiantAddress,
+          amount: amount,
+          compliant: false,
+          index: 1,
+          gasPrice: ethGas.gasPrice.toString(),
+          gasLimit: ethGas.gasLimit.toString(),
+          mnemonic: mnemonic,
+          senderAccountId: wallet.tat_account_id,
+          senderNote: Math.random().toString(36).substring(2),
+        })
+      } catch (e) {
+        console.log(e)
+      }
 
     case 'erc20':
       let erc20TotalCut: any = 0
 
       if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
-        let erc20Gas = {
-          gasLimit: 21000,
-          gasPrice: 20,
+
+        const dueFeeAccount = await accountNameExist("due-fee")
+
+        if(dueFeeAccount['status'] !== "failed") {
+
+          const dueFeeWallet = await dueFeeAccount
+            .related('wallets')
+            .query()
+            .where('currency_id', currency.id)
+            .first()
+
+          await accountToAccountTransaction(
+            wallet.id,
+            dueFeeWallet.tat_account_id,
+            withdrawalCutWithdrawalAdminFee.string(),
+            'Transfer'
+          )
+
+          ManagerDueFee.create({
+            wallet_id: wallet.id,
+            amount: withdrawalCutWithdrawalAdminFee
+          });
+
+          ethTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee)
+
         }
 
-        await sendEthErc20OffchainTransaction(isTest, {
-          address: managerAddress,
-          amount: withdrawalCutWithdrawalAdminFee.toFixed(8).toString(),
-          compliant: false,
-          index: 1,
-          gasPrice: erc20Gas.gasPrice.toString(),
-          gasLimit: erc20Gas.gasLimit.toString(),
-          mnemonic: mnemonic,
-          senderAccountId: wallet.tat_account_id,
-          senderNote: Math.random().toString(36).substring(2),
-        })
+        // let erc20Gas = {
+        //   gasLimit: 21000,
+        //   gasPrice: 20,
+        // }
 
-        networkFee = new BigNumber(erc20Gas.gasLimit)
-          .multipliedBy(erc20Gas.gasPrice)
-          .dividedBy(1000000000)
-          .toFixed(9)
+        // await sendEthErc20OffchainTransaction(isTest, {
+        //   address: managerAddress,
+        //   amount: withdrawalCutWithdrawalAdminFee.toFixed(8).toString(),
+        //   compliant: false,
+        //   index: 1,
+        //   gasPrice: erc20Gas.gasPrice.toString(),
+        //   gasLimit: erc20Gas.gasLimit.toString(),
+        //   mnemonic: mnemonic,
+        //   senderAccountId: wallet.tat_account_id,
+        //   senderNote: Math.random().toString(36).substring(2),
+        // })
 
-        erc20TotalCut = parseFloat(withdrawalCutWithdrawalAdminFee) + parseFloat(networkFee)
+        // networkFee = new BigNumber(erc20Gas.gasLimit)
+        //   .multipliedBy(erc20Gas.gasPrice)
+        //   .dividedBy(1000000000)
+        //   .toFixed(9)
+
+        // erc20TotalCut = parseFloat(withdrawalCutWithdrawalAdminFee) + parseFloat(networkFee)
       }
 
       let erc20Gas = {
@@ -354,29 +383,54 @@ export async function sendCrypto(
       let privateKey: any = decryptEncryption(wallet.private_key)
 
       if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
-        let bnbGas = {
-          gasLimit: 21000,
-          gasPrice: 20,
+
+        const dueFeeAccount = await accountNameExist("due-fee")
+
+        if(dueFeeAccount['status'] !== "failed") {
+          const dueFeeWallet = await dueFeeAccount
+            .related('wallets')
+            .query()
+            .where('currency_id', currency.id)
+            .first()
+
+            await accountToAccountTransaction(
+              wallet.id,
+              dueFeeWallet.tat_account_id,
+              withdrawalCutWithdrawalAdminFee.string(),
+              'Transfer'
+            )
+
+            ManagerDueFee.create({
+              wallet_id: wallet.id,
+              amount: withdrawalCutWithdrawalAdminFee
+            });
+
+            bnbTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee)
         }
 
-        await sendBnbOffchainTransaction({
-          senderAccountId: wallet.tat_account_id,
-          address: managerAddress,
-          amount: withdrawalCutWithdrawalAdminFee.toFixed(8).toString(),
-          compliant: false,
-          gasPrice: bnbGas.gasPrice.toString(),
-          gasLimit: bnbGas.gasLimit.toString(),
-          mnemonic: mnemonic,
-          privateKey: privateKey,
-          senderNote: Math.random().toString(36).substring(2),
-        })
+        // let bnbGas = {
+        //   gasLimit: 21000,
+        //   gasPrice: 20,
+        // }
 
-        networkFee = new BigNumber(bnbGas.gasLimit)
-          .multipliedBy(bnbGas.gasPrice)
-          .dividedBy(1000000000)
-          .toFixed(9)
+        // await sendBnbOffchainTransaction({
+        //   senderAccountId: wallet.tat_account_id,
+        //   address: managerAddress,
+        //   amount: withdrawalCutWithdrawalAdminFee.toFixed(8).toString(),
+        //   compliant: false,
+        //   gasPrice: bnbGas.gasPrice.toString(),
+        //   gasLimit: bnbGas.gasLimit.toString(),
+        //   mnemonic: mnemonic,
+        //   privateKey: privateKey,
+        //   senderNote: Math.random().toString(36).substring(2),
+        // })
 
-        bnbTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee) + parseFloat(networkFee)
+        // networkFee = new BigNumber(bnbGas.gasLimit)
+        //   .multipliedBy(bnbGas.gasPrice)
+        //   .dividedBy(1000000000)
+        //   .toFixed(9)
+
+        // bnbTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee) + parseFloat(networkFee)
       }
 
       let bnbGas = {
