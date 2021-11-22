@@ -64,22 +64,22 @@ export default class AccountsController {
       return response.status(422).json(currency)
     }
 
-    const accounts = await Account.query().preload('wallets').whereHas('wallets', (query) => {
-      query.where('currency_id', currency.id)
-    })
+    const accounts = await Account.query().preload('wallets')
 
     const walletBalance = [];
     
     for (var i = 0; i < accounts.length; i++) {
+    
+      let currencyWallet: any = await accounts[i].related('wallets').query().where('currency_id', currency.id).first()
 
-      let tatAccount: any = await getAccountById(accounts[i].wallets[0].tat_account_id)
+      let tatAccount: any = currencyWallet ? await getAccountById(currencyWallet?.tat_account_id) : []
 
-      let exchangeRate: any = await getExchangeRate(Currency[request.all().currency.toUpperCase()], Fiat['USD'])
+      let exchangeRate: any = currencyWallet ? await getExchangeRate(Currency[request.all().currency.toUpperCase()], Fiat['USD']) : []
 
       let wallet = {
-        name: accounts[i].wallets[0].account_code,
-        balance: tatAccount.balance.availableBalance  + ' ' + request.all().currency.toUpperCase(),
-        balance_usd: (parseFloat(tatAccount.balance.availableBalance) * exchangeRate.value).toFixed(2)  + ' USD'
+        name: await currencyWallet?.account_code ?? accounts[i].display_name + '-' + request.all().currency.toUpperCase(),
+        balance: tatAccount?.balance?.availableBalance ?? 0  + ' ' + request.all().currency.toUpperCase(),
+        balance_usd: (parseFloat(tatAccount?.balance?.availableBalance ?? 0) * exchangeRate?.value ?? 0).toFixed(2)  + ' USD'
       }
 
       walletBalance.push(wallet)
