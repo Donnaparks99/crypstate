@@ -24,7 +24,7 @@ export default class TransactionsController {
       amount: schema.number(),
       toAddress: schema.string(),
       memoTag: schema.string.optional(),
-      cutAmount: schema.string.optional()
+      // cutAmount: schema.string.optional()
     })
 
     try {

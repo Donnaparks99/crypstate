@@ -2,7 +2,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import { Currency, Fiat, getAccountById, getExchangeRate } from '@tatumio/tatum'
 import Account from 'App/Models/Account'
-import { currencyExistInDb, getAccounts } from 'App/Services/Validation'
+import { currencyExistInDb } from 'App/Services/Validation'
 
 export default class AccountsController {
   public async create({ request, response }: HttpContextContract) {
