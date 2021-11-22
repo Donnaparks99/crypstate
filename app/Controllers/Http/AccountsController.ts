@@ -1,6 +1,8 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
+import { Currency, Fiat, getAccountById, getExchangeRate } from '@tatumio/tatum'
 import Account from 'App/Models/Account'
+import { currencyExistInDb, getAccounts } from 'App/Services/Validation'
 
 export default class AccountsController {
   public async create({ request, response }: HttpContextContract) {
@@ -39,5 +41,52 @@ export default class AccountsController {
         data: account,
       })
     }
+  }
+
+  public async allAccountsBalance({ request, response }: HttpContextContract) {
+    var requestData = schema.create({
+      currency: schema.string()
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+
+    const currency = await currencyExistInDb(request.all().currency)
+
+    if (currency['status'] === 'failed') {
+      return response.status(422).json(currency)
+    }
+
+    const accounts = await Account.query().preload('wallets').whereHas('wallets', (query) => {
+      query.where('currency_id', currency.id)
+    })
+
+    const walletBalance = [];
+    
+    for (var i = 0; i < accounts.length; i++) {
+
+      let tatAccount: any = await getAccountById(accounts[i].wallets[0].tat_account_id)
+
+      let exchangeRate: any = await getExchangeRate(Currency[request.all().currency.toUpperCase()], Fiat['USD'])
+
+      let wallet = {
+        name: accounts[i].wallets[0].account_code,
+        balance: tatAccount.balance.availableBalance  + ' ' + request.all().currency.toUpperCase(),
+        balance_usd: (parseFloat(tatAccount.balance.availableBalance) * exchangeRate.value).toFixed(2)  + ' USD'
+      }
+
+      walletBalance.push(wallet)
+
+    }
+    
+    return walletBalance
+
   }
 }

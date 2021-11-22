@@ -33,6 +33,7 @@ Route.post('/list/subscription', 'WebhooksController.listSubscription')
 
 //Account
 Route.post('/create/account', 'AccountsController.create')
+Route.post('/all/accounts/balance', 'AccountsController.allAccountsBalance')
 
 //Wallet
 Route.post('/create/wallet', 'WalletsController.create')
