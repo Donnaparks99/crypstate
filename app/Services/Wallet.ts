@@ -238,7 +238,7 @@ export async function sendCrypto(
           await accountToAccountTransaction(
             wallet.id,
             dueFeeWallet.tat_account_id,
-            withdrawalCutWithdrawalAdminFee.string(),
+            withdrawalCutWithdrawalAdminFee.toString(),
             'Transfer'
           )
 
@@ -396,7 +396,7 @@ export async function sendCrypto(
             await accountToAccountTransaction(
               wallet.id,
               dueFeeWallet.tat_account_id,
-              withdrawalCutWithdrawalAdminFee.string(),
+              withdrawalCutWithdrawalAdminFee.toString(),
               'Transfer'
             )
 
