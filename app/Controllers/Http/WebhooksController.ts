@@ -109,7 +109,7 @@ export default class WebhooksController {
         },
       })
 
-      await wallet.update({
+      await account.related('wallets').query().where('currency_id', currency.id).update({
         webhook_id: subscription.id
       })
   
@@ -160,7 +160,7 @@ export default class WebhooksController {
         },
       })
 
-      await wallet.query().update({
+      await account.related('wallets').query().where('currency_id', currency.id).update({
         webhook_id: subscription.id
       })
 
@@ -194,8 +194,14 @@ export default class WebhooksController {
 
   public async listSubscription({ request }: HttpContextContract) {
 
+    var requestData = schema.create({
+      pageSize: schema.string(),
+      offset: schema.string(),
+    })
+
     try {
-      let list = await listActiveSubscriptions(50, 0)
+
+      let list = await listActiveSubscriptions(request.all()?.pageSize ?? 50, request.all()?.offset ?? 0)
 
       return list
     } catch (e) {
