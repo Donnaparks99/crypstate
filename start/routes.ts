@@ -30,6 +30,7 @@ Route.post('/tatum/webhook', 'WebhooksController.index').as('tatumWebhook')
 Route.post('/recreate/subscription', 'WebhooksController.recreateSubscription')
 Route.post('/delete/subscription', 'WebhooksController.deleteSubscription')
 Route.post('/list/subscription', 'WebhooksController.listSubscription')
+Route.post('/create/subscription', 'WebhooksController.createSubscription')
 
 //Account
 Route.post('/create/account', 'AccountsController.create')

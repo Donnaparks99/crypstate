@@ -62,16 +62,6 @@ export default class WebhooksController {
       delete transaction.accountId
       delete transaction.anonymous
       delete transaction.marketValue
-
-      fetch(`${account.url}${account.webhook_endpoint}`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify(transaction),
-      })
-
-      console.log('object')
     }
   }
 
@@ -110,22 +100,106 @@ export default class WebhooksController {
 
     await cancelExistingSubscription(wallet.webhook_id)
 
-    const subscription = await createNewSubscription({
-      type: SubscriptionType.ACCOUNT_INCOMING_BLOCKCHAIN_TRANSACTION,
-      attr: {
-        id: wallet.tat_account_id,
-        url: request.all().webhook_url,
-      },
-    })
+    try {
+      const subscription = await createNewSubscription({
+        type: SubscriptionType.ACCOUNT_INCOMING_BLOCKCHAIN_TRANSACTION,
+        attr: {
+          id: wallet.tat_account_id,
+          url: request.all().webhook_url,
+        },
+      })
 
-    await wallet.update({
-      webhook_id: subscription.id
-    })
+      await wallet.update({
+        webhook_id: subscription.id
+      })
+  
+      return response.status(200).json(subscription)
+    } catch (err) {
+      return err.response?.data
+    }
 
-    return response.status(200).json(subscription)
+    
   }
 
-  public async deleteSubscription({ request }: HttpContextContract) {}
+  public async createSubscription({ request, response }: HttpContextContract) {
 
-  public async listSubscription({ request }: HttpContextContract) {}
+    var requestData = schema.create({
+      account_name: schema.string(),
+      currency: schema.string(),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    const account = await accountNameExist(request.all().account_name)
+
+    if (account['status'] === 'failed') {
+      return response.status(422).json(account)
+    }
+
+    const currency = await currencyExistInDb(request.all().currency)
+
+    if (currency['status'] === 'failed') {
+      return response.status(422).json(currency)
+    }
+
+    let wallet = await account.related('wallets').query().where('currency_id', currency.id).first()
+
+    try {
+      const subscription = await createNewSubscription({
+        type: SubscriptionType.ACCOUNT_INCOMING_BLOCKCHAIN_TRANSACTION,
+        attr: {
+          id: wallet.tat_account_id,
+          url: request.all().webhook_url,
+        },
+      })
+
+      await wallet.query().update({
+        webhook_id: subscription.id
+      })
+
+      return response.status(200).json(subscription)
+
+    } catch (e) {
+      return e.response.data;
+    }
+
+  }
+
+  public async deleteSubscription({ request, response }: HttpContextContract) {
+
+    var requestData = schema.create({
+      webhook_id: schema.string(),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    let cancel = await cancelExistingSubscription(request.all().webhook_id)
+
+    return cancel
+  }
+
+  public async listSubscription({ request }: HttpContextContract) {
+
+    try {
+      let list = await listActiveSubscriptions(50, 0)
+
+      return list
+    } catch (e) {
+      return e.response.data
+    }
+  }
 }
