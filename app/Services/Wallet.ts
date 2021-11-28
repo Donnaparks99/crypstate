@@ -25,6 +25,7 @@ import fetch from 'node-fetch'
 import { BigNumber } from 'bignumber.js'
 import ManagerDueFee from 'App/Models/ManagerDueFee'
 import { accountNameExist } from './Validation'
+import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 
 type WithdrawBnbType = {
   senderAccountId: string
@@ -105,8 +106,73 @@ export async function sendCrypto(
     totalSendAmount = amount.toString()
   }
 
+  
+
   switch (currency.token) {
     case 'btc':
+
+    console.log({
+      senderAccountId: wallet.tat_account_id,
+      address: receivingAddress,
+      amount: totalSendAmount,
+      compliant: false,
+      fee: fee,
+      multipleAmounts: sendingAmount,
+      mnemonic: mnemonic,
+      xpub: xpub,
+      senderNote: Math.random().toString(36).substring(2),
+    })
+
+    // return ;
+
+    // let eerr = await fetch('https://api-eu1.tatum.io/v3/offchain/withdrawal/61a34cefb82f0369c4a021e6', {
+    //   method: 'DELETE',
+    //   headers: {
+    //     'content-type': 'application/json',
+    //     'x-api-key': Env.get('TATUM_API_KEY'),
+    //   }
+    // })
+    
+    // return ;
+    // let witg = await fetch('https://api-eu1.tatum.io/v3/offchain/bitcoin/transfer', {
+    //   method: 'POST',
+    //   headers: {
+    //     'content-type': 'application/json',
+    //     'x-api-key': Env.get('TATUM_API_KEY'),
+    //   },
+    //   body: JSON.stringify({
+    //     senderAccountId: '610fe8f036faf1bf03a26210',
+    //     address: '39U8KPphrfR5nyHwCTK9d82FEzo32j83cs,1L85SKQBxpFk7hkXHTpT14Q5qxwq2q8iT7',
+    //     amount: '0.00001810',
+    //     compliant: false,
+    //     fee: '0.0000119',
+    //     multipleAmounts: [ '0.00001690', '0.0000012' ],
+    //     mnemonic: 'festival east layer novel tank health token romance debris script aspect gun track novel polar oxygen detect connect door mesh permit garment cherry pipe',
+    //     xpub: 'xpub6EdxmiT3pNPLqYVMm6r1H18fe7fFg78v26wffZzM8goUmbRMRbSGrcjSz4SMYxhtUB5peDMLvvR6RscZ89VDRw8giccU3JkhAvU9kHEDVZY',
+    //     senderNote: 'ckhss5nt57'
+    //   }),
+    // })
+
+    // let uggg = await witg.json()
+
+    // console.log(uggg);
+
+    // return uggg
+
+    // return
+
+
+    // {
+    //   senderAccountId: '610fe8f036faf1bf03a26210',
+    //   address: '39U8KPphrfR5nyHwCTK9d82FEzo32j83cs,1L85SKQBxpFk7hkXHTpT14Q5qxwq2q8iT7',
+    //   amount: '0.00001810',
+    //   compliant: false,
+    //   fee: '0.0000119',
+    //   multipleAmounts: [ '0.00001690', '0.0000012' ],
+    //   mnemonic: 'festival east layer novel tank health token romance debris script aspect gun track novel polar oxygen detect connect door mesh permit garment cherry pipe',
+    //   xpub: 'xpub6EdxmiT3pNPLqYVMm6r1H18fe7fFg78v26wffZzM8goUmbRMRbSGrcjSz4SMYxhtUB5peDMLvvR6RscZ89VDRw8giccU3JkhAvU9kHEDVZY',
+    //   senderNote: 't5xibxblum8'
+    // }
       return await sendBitcoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
@@ -126,7 +192,7 @@ export async function sendCrypto(
         amount: totalSendAmount,
         compliant: false,
         fee: fee,
-        multipleAmounts: sendingAmount,
+        // multipleAmounts: sendingAmount,
         mnemonic: mnemonic,
         xpub: xpub,
         senderNote: Math.random().toString(36).substring(2),

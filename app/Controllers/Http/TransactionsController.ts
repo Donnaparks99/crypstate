@@ -89,7 +89,7 @@ export default class TransactionsController {
         data: send,
       })
     } catch (err) {
-      console.log(err)
+      // console.log(err?.response?.data)
 
       return response.status(401).json({
         status: 'error',
