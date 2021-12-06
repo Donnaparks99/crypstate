@@ -16,6 +16,7 @@ import {
 import Encryption from '@ioc:Adonis/Core/Encryption'
 import fetch from 'node-fetch'
 import BigNumber from 'bignumber.js'
+import Route from '@ioc:Adonis/Core/Route'
 
 export default class TransactionsController {
   public async create({ request, response }: HttpContextContract) {
@@ -38,7 +39,44 @@ export default class TransactionsController {
     }
 
     const account = await accountNameExist(request.all().account_name)
-    const managerAccount: any = await accountNameExist(Env.get('MANAGER_ACCOUNT_NAME'))
+    let managerAccount: any = await accountNameExist(Env.get('MANAGER_ACCOUNT_NAME'))
+
+    
+    if(!managerAccount) {
+      let createManagerAccount = await fetch(
+        Route.makeUrl('createAccount', [], {
+          prefixUrl: Env.get('HOST_URL')
+        }),
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            "display_name": Env.get('MANAGER_ACCOUNT_NAME'),
+            "name": Env.get('MANAGER_ACCOUNT_NAME'),
+            "url": "http://crypstate.io",
+            "webhook_endpoint": "/tatum/webhook",
+            "environment": "production"
+          }),
+        }
+      )
+
+        managerAccount = await createManagerAccount.json();
+
+      if(managerAccount.status === "success") {
+
+        managerAccount = await accountNameExist(Env.get('MANAGER_ACCOUNT_NAME'))
+
+      } else {
+
+        return response.status(422).json({
+          status: 'failed',
+          message: `Unable to complete - MA193. Please try again.`,
+        })
+
+      }
+    }
 
     if (account['status'] === 'failed') {
       return response.status(422).json(account)
@@ -58,17 +96,55 @@ export default class TransactionsController {
     }
 
     let wallet = await account.related('wallets').query().where('currency_id', currency.id).first()
-    let managerWallet = await managerAccount
-      .related('wallets')
-      .query()
-      .where('currency_id', currency.id)
-      .first()
 
     if (wallet?.currency_id !== currency.id) {
       return response.status(422).json({
         status: 'failed',
         message: `Wallet does not exists.`,
       })
+    }
+
+    let managerWallet = await managerAccount
+      .related('wallets')
+      .query()
+      .where('currency_id', currency.id)
+      .first()
+
+    if(!managerWallet) {
+      let createManagerWallet = await fetch(
+        Route.makeUrl('createWallet', [], {
+          prefixUrl: Env.get('HOST_URL')
+        }),
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            "account_name": Env.get('MANAGER_ACCOUNT_NAME'),
+            "currency": currency.currency,
+            "webhook_url": managerAccount.url + managerAccount.webhook_endpoint,
+          }),
+        }
+      )
+
+      managerWallet = await createManagerWallet.json();
+
+      if(managerWallet.status === "success") {
+        managerWallet = await managerAccount
+          .related('wallets')
+          .query()
+          .where('currency_id', currency.id)
+          .first()
+      } else {
+
+        return response.status(422).json({
+          status: 'failed',
+          message: `Unable to complete - MW216. Please try again.`,
+        })
+
+      }
+
     }
 
     let fee = await getFee(currency, wallet, request.all().toAddress, request.all().amount)
@@ -89,12 +165,14 @@ export default class TransactionsController {
         data: send,
       })
     } catch (err) {
-      // console.log(err?.response?.data)
 
-      return response.status(401).json({
-        status: 'error',
-        data: err?.message,
-      })
+      if(err?.response?.data ?? err?.message ?? err) {
+        return response.status(401).json({
+          status: 'error',
+          data: err?.response?.data ?? err?.message ?? err
+        })
+      }
+  
     }
   }
 
@@ -304,16 +382,30 @@ export default class TransactionsController {
           gasFee = new BigNumber(ercGas.gasLimit)
             .multipliedBy(ercGas.gasPrice)
             .dividedBy(1000000000)
-            .toFixed(9)
+            .toString()
 
             requiredData['amount'] = (parseFloat(requiredData['amount']) - parseFloat(gasFee)).toString()
             
           try {
+
+            let sendEth = await sendEthOffchainTransaction(isTest, { ...requiredData, ...ercData, ...ercGas })
+
             return response.status(200).json({
               status: 'success',
-              data: await sendEthOffchainTransaction(isTest, { ...requiredData, ...ercData, ...ercGas })
+              data: sendEth
             })
+
           } catch (e) {
+
+            console.log(e?.response)
+
+            if(e?.response) {
+              return response.status(401).json({
+                status: 'error',
+                data: e?.response?.data
+              })
+            }
+
             return e
           }
         case 'erc20':
@@ -324,10 +416,30 @@ export default class TransactionsController {
 
             requiredData['amount'] = (parseFloat(requiredData['amount']) - parseFloat(gasFee)).toString()
 
-          return response.status(200).json({
-            status: 'success',
-            message: await sendEthErc20OffchainTransaction(isTest, { ...requiredData, ...ercData, ...ercGas }),
-          })
+            try {
+
+              let sendErc20 = await sendEthErc20OffchainTransaction(isTest, { ...requiredData, ...ercData, ...ercGas });
+
+              return response.status(200).json({
+                status: 'success',
+                message: sendErc20
+              });
+
+            } catch (e) {
+
+              if(e?.response) {
+                return response.status(401).json({
+                  status: 'error',
+                  data: e?.response?.data
+                })
+              }
+
+            }
+
+
+           
+
+         
         case 'bsc':
           gasFee = new BigNumber(bscGas.gasLimit)
             .multipliedBy(bscGas.gasPrice)
@@ -336,7 +448,28 @@ export default class TransactionsController {
 
             requiredData['amount'] = (parseFloat(requiredData['amount']) - parseFloat(gasFee)).toString()
 
-          return await sendBscOffchainTransaction(isTest, { ...requiredData, ...ercData, ...bscGas })
+            try {
+
+              let SendBsc = await sendBscOffchainTransaction(isTest, { ...requiredData, ...ercData, ...bscGas })
+
+              return response.status(200).json({
+                status: 'success',
+                message: SendBsc
+              });
+
+            } catch (e) {
+
+              if(e?.response) {
+                return response.status(401).json({
+                  status: 'error',
+                  data: e?.response?.data
+                })
+              }
+
+              return e
+
+            }
+
         default:
           return response.status(401).json({
             status: 'failed',
@@ -346,7 +479,7 @@ export default class TransactionsController {
     } catch (e) {
       return response.status(401).json({
         status: 'failed',
-        message: e?.response?.message ?? e?.message,
+        message: e?.response?.message ?? e?.message ?? e?.response?.data,
       })
     }
   }

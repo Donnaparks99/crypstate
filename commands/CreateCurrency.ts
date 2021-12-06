@@ -213,7 +213,7 @@ export default class CreateCurrency extends BaseCommand {
         tatum_currency: 'ada',
         tx_model: 'utxo',
         type: 'native',
-        token: 'doge',
+        token: 'ada',
         derived_from: null,
         has_mnemonic: 1,
         has_xpub: 1,

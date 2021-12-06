@@ -25,7 +25,7 @@ import fetch from 'node-fetch'
 import { BigNumber } from 'bignumber.js'
 import ManagerDueFee from 'App/Models/ManagerDueFee'
 import { accountNameExist } from './Validation'
-import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
+import Route from '@ioc:Adonis/Core/Route'
 
 type WithdrawBnbType = {
   senderAccountId: string
@@ -47,7 +47,7 @@ export async function sendCrypto(
   amount: any,
   fee: any,
   memoTag: any,
-  cutAmount: any
+  withdrawalCommission: any
 ) {
   const currency: any = await wallet.related('currency').query().first()
   const account: any = await wallet.related('account').query().first()
@@ -61,8 +61,6 @@ export async function sendCrypto(
 
   const isTest: boolean = account.environment === 'local' ? true : false
 
-  let withdrawalFeeType: any = account.withdrawal_fee_type
-  let withdrawalFee: any = account.withdrawal_fee
   let managerAddress: any = managerWalletAddress?.address
   let managerAddressMemoTag =
     managerWalletAddress?.destination_tag ??
@@ -70,135 +68,138 @@ export async function sendCrypto(
     managerWalletAddress?.message
   let networkFee: any = 0
 
-  if (withdrawalFeeType === 'flat') {
-    amount = amount - withdrawalFee
-  } else if (withdrawalFeeType === 'percentage') {
-    withdrawalFee = ((amount * withdrawalFee) / 100).toFixed(8)
-    amount = amount - withdrawalFee
-  }
 
-  if (fee?.gasPrice) {
-    // networkFee = new BigNumber(fee.gasLimit)
-    //   .multipliedBy(fee.gasPrice)
-    //   .dividedBy(1000000000000000000)
-    //   .toFixed(9)
-    // amount = (parseFloat(amount) - networkFee).toFixed(8)
-  } else {
-    amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
+  let withdrawalFee: any = 0;
+
+  if(parseFloat(account.withdrawal_fee) > 0 || parseFloat(withdrawalCommission) > 0) {
+
+    if(account.withdrawal_fee_type === 'flat') {
+
+      withdrawalFee = parseFloat(account.withdrawal_fee) + parseFloat(withdrawalCommission)
+      amount = amount - withdrawalFee
+
+    } else if(account.withdrawal_fee_type === 'percentage') {
+
+      withdrawalFee = (amount * (account.withdrawal_fee / 100)).toFixed(8)
+      amount = amount - (parseFloat(withdrawalFee) + parseFloat(withdrawalCommission))
+      
+    }
+
   }
 
   const mnemonic: any = decryptEncryption(wallet.mnemonic)
   const xpub: any = decryptEncryption(wallet.xpub)
   const secret: any = decryptEncryption(wallet.secret)
 
-  let withdrawalCutWithdrawalAdminFee: any = parseFloat(cutAmount) + parseFloat(withdrawalFee)
+  
   let receivingAddress: any = ''
-  let sendingAmount: any = ''
+  let multipleAmounts: any = ''
   let totalSendAmount: any = ''
 
-  if (withdrawalCutWithdrawalAdminFee > 0) {
+  if(withdrawalFee > 0 && managerAddress) {
+
     receivingAddress = recepiantAddress + ',' + managerAddress
-    sendingAmount = [amount.toString(), withdrawalCutWithdrawalAdminFee.toString()]
-    totalSendAmount = (parseFloat(amount) + withdrawalCutWithdrawalAdminFee).toFixed(8).toString()
+    multipleAmounts = [
+      amount.toString(), 
+      withdrawalFee.toString()
+    ]
+    totalSendAmount = (parseFloat(amount) + withdrawalFee).toFixed(8).toString()
+    
   } else {
     receivingAddress = recepiantAddress
-    sendingAmount = [amount.toString()]
+    multipleAmounts = [amount.toString()]
     totalSendAmount = amount.toString()
   }
-
   
 
+  async function toDueFeeAccount() {
+    if(withdrawalFee > 0) {
+      const dueFeeAccount = await accountNameExist("due-fee")
+
+      let dueFeeWallet = await dueFeeAccount
+        .related('wallets')
+        .query()
+        .where('currency_id', currency.id)
+        .first()
+
+      if(!dueFeeWallet) {
+
+        let createDueFeeWallet = await fetch(
+          Route.makeUrl('createWallet', [], {
+            prefixUrl: Env.get('HOST_URL')
+          }),
+          {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              "account_name": "due-fee",
+              "currency": currency.currency,
+              "webhook_url": dueFeeAccount.url + dueFeeAccount.webhook_endpoint,
+            }),
+          }
+        )
+
+        dueFeeWallet = await dueFeeAccount
+          .related('wallets')
+          .query()
+          .where('currency_id', currency.id)
+          .first()
+      }
+
+      await accountToAccountTransaction(
+        wallet.tat_account_id,
+        dueFeeWallet.tat_account_id,
+        withdrawalFee.toString(),
+        'Transfer'
+      )
+
+      ManagerDueFee.create({
+        wallet_id: wallet.id,
+        amount: withdrawalFee
+      })
+    }
+  }
+
   switch (currency.token) {
+
     case 'btc':
 
-    console.log({
-      senderAccountId: wallet.tat_account_id,
-      address: receivingAddress,
-      amount: totalSendAmount,
-      compliant: false,
-      fee: fee,
-      multipleAmounts: sendingAmount,
-      mnemonic: mnemonic,
-      xpub: xpub,
-      senderNote: Math.random().toString(36).substring(2),
-    })
+      amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
 
-    // return ;
-
-    // let eerr = await fetch('https://api-eu1.tatum.io/v3/offchain/withdrawal/61a34cefb82f0369c4a021e6', {
-    //   method: 'DELETE',
-    //   headers: {
-    //     'content-type': 'application/json',
-    //     'x-api-key': Env.get('TATUM_API_KEY'),
-    //   }
-    // })
-    
-    // return ;
-    // let witg = await fetch('https://api-eu1.tatum.io/v3/offchain/bitcoin/transfer', {
-    //   method: 'POST',
-    //   headers: {
-    //     'content-type': 'application/json',
-    //     'x-api-key': Env.get('TATUM_API_KEY'),
-    //   },
-    //   body: JSON.stringify({
-    //     senderAccountId: '610fe8f036faf1bf03a26210',
-    //     address: '39U8KPphrfR5nyHwCTK9d82FEzo32j83cs,1L85SKQBxpFk7hkXHTpT14Q5qxwq2q8iT7',
-    //     amount: '0.00001810',
-    //     compliant: false,
-    //     fee: '0.0000119',
-    //     multipleAmounts: [ '0.00001690', '0.0000012' ],
-    //     mnemonic: 'festival east layer novel tank health token romance debris script aspect gun track novel polar oxygen detect connect door mesh permit garment cherry pipe',
-    //     xpub: 'xpub6EdxmiT3pNPLqYVMm6r1H18fe7fFg78v26wffZzM8goUmbRMRbSGrcjSz4SMYxhtUB5peDMLvvR6RscZ89VDRw8giccU3JkhAvU9kHEDVZY',
-    //     senderNote: 'ckhss5nt57'
-    //   }),
-    // })
-
-    // let uggg = await witg.json()
-
-    // console.log(uggg);
-
-    // return uggg
-
-    // return
-
-
-    // {
-    //   senderAccountId: '610fe8f036faf1bf03a26210',
-    //   address: '39U8KPphrfR5nyHwCTK9d82FEzo32j83cs,1L85SKQBxpFk7hkXHTpT14Q5qxwq2q8iT7',
-    //   amount: '0.00001810',
-    //   compliant: false,
-    //   fee: '0.0000119',
-    //   multipleAmounts: [ '0.00001690', '0.0000012' ],
-    //   mnemonic: 'festival east layer novel tank health token romance debris script aspect gun track novel polar oxygen detect connect door mesh permit garment cherry pipe',
-    //   xpub: 'xpub6EdxmiT3pNPLqYVMm6r1H18fe7fFg78v26wffZzM8goUmbRMRbSGrcjSz4SMYxhtUB5peDMLvvR6RscZ89VDRw8giccU3JkhAvU9kHEDVZY',
-    //   senderNote: 't5xibxblum8'
-    // }
       return await sendBitcoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
         amount: totalSendAmount,
         compliant: false,
         fee: fee,
-        multipleAmounts: sendingAmount,
+        multipleAmounts: multipleAmounts,
         mnemonic: mnemonic,
         xpub: xpub,
         senderNote: Math.random().toString(36).substring(2),
       })
 
     case 'bch':
+
+      amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
+
       return await sendBitcoinCashOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
         amount: totalSendAmount,
         compliant: false,
         fee: fee,
-        // multipleAmounts: sendingAmount,
+        multipleAmounts: multipleAmounts,
         mnemonic: mnemonic,
         xpub: xpub,
         senderNote: Math.random().toString(36).substring(2),
       })
 
     case 'ltc':
+
+      amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
+
       return await sendLitecoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
@@ -212,66 +213,38 @@ export async function sendCrypto(
       })
 
     case 'doge':
+
+      amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
+
       return await sendDogecoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
         amount: totalSendAmount,
         compliant: false,
         fee: fee,
-        multipleAmounts: sendingAmount,
+        multipleAmounts: multipleAmounts,
         mnemonic: mnemonic,
         xpub: xpub,
         senderNote: Math.random().toString(36).substring(2),
       })
 
     case 'eth':
-      let ethTotalCut: any = 0
-      let maitainanceTxData: any = 0
-
-      if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
-
-        const dueFeeAccount = await accountNameExist("due-fee")
-
-        if(dueFeeAccount['status'] !== "failed") {
-
-          const dueFeeWallet = await dueFeeAccount
-            .related('wallets')
-            .query()
-            .where('currency_id', currency.id)
-            .first()
-
-          await accountToAccountTransaction(
-            wallet.id,
-            dueFeeWallet.tat_account_id,
-            withdrawalCutWithdrawalAdminFee.toString(),
-            'Transfer'
-          )
-
-          ManagerDueFee.create({
-            wallet_id: wallet.id,
-            amount: withdrawalCutWithdrawalAdminFee
-          });
-
-          ethTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee)
-
-        }
-
-      }
-
-      let ethGas = {
-        gasLimit: "21000",
-        gasPrice: "200",
-      }
-
-      networkFee = new BigNumber(ethGas.gasLimit)
-        .multipliedBy(ethGas.gasPrice)
-        .dividedBy(1000000000)
-        .toFixed(9)
-
-      amount = new BigNumber(amount).minus(networkFee).minus(ethTotalCut).toString()
 
       try {
-        return await sendEthOffchainTransaction(isTest, {
+
+        let ethGas = {
+          gasLimit: "21000",
+          gasPrice: "200",
+        }
+
+        networkFee = new BigNumber(ethGas.gasLimit)
+          .multipliedBy(ethGas.gasPrice)
+          .dividedBy(1000000000)
+          .toFixed(9)
+
+        amount = new BigNumber(amount).minus(networkFee).toString()
+
+        let sendEth = await sendEthOffchainTransaction(isTest, {
           address: recepiantAddress,
           amount: amount,
           compliant: false,
@@ -281,121 +254,138 @@ export async function sendCrypto(
           mnemonic: mnemonic,
           senderAccountId: wallet.tat_account_id,
           senderNote: Math.random().toString(36).substring(2),
-        })
+        }) 
+          
+        await toDueFeeAccount()
+
+        return sendEth;
       } catch (e) {
-        console.log(e)
+        return e
       }
 
     case 'erc20':
-      let erc20TotalCut: any = 0
 
-      if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
+      try {
 
-        const dueFeeAccount = await accountNameExist("due-fee")
-
-        if(dueFeeAccount['status'] !== "failed") {
-
-          const dueFeeWallet = await dueFeeAccount
-            .related('wallets')
-            .query()
-            .where('currency_id', currency.id)
-            .first()
-
-          await accountToAccountTransaction(
-            wallet.id,
-            dueFeeWallet.tat_account_id,
-            withdrawalCutWithdrawalAdminFee.toString(),
-            'Transfer'
-          )
-
-          ManagerDueFee.create({
-            wallet_id: wallet.id,
-            amount: withdrawalCutWithdrawalAdminFee
-          });
-
-          ethTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee)
-
+        let erc20Gas = {
+          gasLimit: 21000,
+          gasPrice: 50,
         }
 
-        // let erc20Gas = {
-        //   gasLimit: 21000,
-        //   gasPrice: 20,
-        // }
+        networkFee = new BigNumber(erc20Gas.gasLimit)
+          .multipliedBy(erc20Gas.gasPrice)
+          .dividedBy(1000000000)
+          .toFixed(9)
 
-        // await sendEthErc20OffchainTransaction(isTest, {
-        //   address: managerAddress,
-        //   amount: withdrawalCutWithdrawalAdminFee.toFixed(8).toString(),
-        //   compliant: false,
-        //   index: 1,
-        //   gasPrice: erc20Gas.gasPrice.toString(),
-        //   gasLimit: erc20Gas.gasLimit.toString(),
-        //   mnemonic: mnemonic,
-        //   senderAccountId: wallet.tat_account_id,
-        //   senderNote: Math.random().toString(36).substring(2),
-        // })
+        amount = new BigNumber(amount).minus(networkFee).toString()
 
-        // networkFee = new BigNumber(erc20Gas.gasLimit)
-        //   .multipliedBy(erc20Gas.gasPrice)
-        //   .dividedBy(1000000000)
-        //   .toFixed(9)
+        let sendErc20 = await sendEthErc20OffchainTransaction(isTest, {
+          address: recepiantAddress,
+          amount: amount,
+          compliant: false,
+          index: 1,
+          gasPrice: erc20Gas.gasPrice.toString(),
+          gasLimit: erc20Gas.gasLimit.toString(),
+          mnemonic: mnemonic,
+          senderAccountId: wallet.tat_account_id,
+          senderNote: Math.random().toString(36).substring(2),
+        })
+          
+        await toDueFeeAccount()
 
-        // erc20TotalCut = parseFloat(withdrawalCutWithdrawalAdminFee) + parseFloat(networkFee)
+        return sendErc20;
+      } catch (e) {
+        return e
       }
 
-      let erc20Gas = {
-        gasLimit: 21000,
-        gasPrice: 50,
+    case 'bsc':
+      try {
+
+        let BscGas = {
+          gasLimit: 40000,
+          gasPrice: 20,
+        }
+
+        networkFee = new BigNumber(BscGas.gasLimit)
+          .multipliedBy(BscGas.gasPrice)
+          .dividedBy(1000000000)
+          .toFixed(9)
+
+        amount = new BigNumber(amount).minus(networkFee).toString()
+
+        let sendBsc = await sendBscOffchainTransaction(isTest, {
+          address: recepiantAddress,
+          amount: amount,
+          compliant: false,
+          index: 1,
+          gasPrice: BscGas.gasPrice.toString(),
+          gasLimit: BscGas.gasLimit.toString(),
+          mnemonic: mnemonic,
+          senderAccountId: wallet.tat_account_id,
+          senderNote: Math.random().toString(36).substring(2),
+        })
+        
+        await toDueFeeAccount()
+
+        return sendBsc;
+
+      } catch (e) {
+
+        return e
+
       }
 
-      networkFee = new BigNumber(erc20Gas.gasLimit)
-        .multipliedBy(erc20Gas.gasPrice)
-        .dividedBy(1000000000)
-        .toFixed(9)
+    case 'ada':
+      
+      try {
+        let adaFee = 0.16;
 
-      amount = new BigNumber(amount).minus(networkFee).minus(erc20TotalCut).toString()
+        amount = parseFloat(amount) - adaFee;
 
-      return await sendEthErc20OffchainTransaction(isTest, {
-        address: recepiantAddress,
-        amount: amount,
-        compliant: false,
-        index: 1,
-        gasPrice: erc20Gas.gasPrice.toString(),
-        gasLimit: erc20Gas.gasLimit.toString(),
-        mnemonic: mnemonic,
-        senderAccountId: wallet.tat_account_id,
-        senderNote: Math.random().toString(36).substring(2),
-      })
+        let sendAda = await sendAdaOffchainTransaction(isTest, {
+          senderAccountId: wallet.tat_account_id,
+          address: receivingAddress,
+          amount: amount.toString(),
+          compliant: false,
+          fee: adaFee.toString(),
+          // index: 0,
+          mnemonic: mnemonic,
+          xpub: xpub,
+          senderNote: Math.random().toString(36).substring(2),
+        })
+
+        await toDueFeeAccount()
+
+        return sendAda;
+      } catch (e) {
+        return e
+      }
 
     case 'trx':
-      let trxTotalCut: any = 0
 
-      if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
-        await sendTronOffchainTransaction(isTest, {
+      try {
+        let tronFee = 2
+
+        amount = amount - tronFee
+  
+        let sendTron = await sendTronOffchainTransaction(isTest, {
           senderAccountId: wallet.tat_account_id,
-          address: managerAddress,
-          amount: withdrawalCutWithdrawalAdminFee.toFixed(8).toString(),
+          address: recepiantAddress,
+          amount: amount,
           compliant: false,
-          fee: '1',
-          index: 0,
+          fee: tronFee.toString(),
+          index: 1,
           mnemonic: mnemonic,
           senderNote: Math.random().toString(36).substring(2),
         })
 
-        trxTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee) + 1
+        await toDueFeeAccount()
+
+        return sendTron;
+
+      } catch (e) {
+        return e
       }
-
-      amount = amount - trxTotalCut - 2
-
-      return await sendTronOffchainTransaction(isTest, {
-        senderAccountId: wallet.tat_account_id,
-        address: recepiantAddress,
-        amount: amount,
-        compliant: false,
-        fee: '2',
-        index: 1,
-        mnemonic: mnemonic,
-        senderNote: Math.random().toString(36).substring(2),
-      })
 
     case 'xrp':
       let xrpFromAddress: any = await wallet
@@ -429,109 +419,6 @@ export async function sendCrypto(
         amount: amount,
         secret: secret,
         compliant: false,
-        senderNote: Math.random().toString(36).substring(2),
-      })
-    case 'bsc':
-      return await sendBscOffchainTransaction(isTest, {
-        senderAccountId: wallet.tat_account_id,
-        address: recepiantAddress,
-        amount: amount,
-        compliant: false,
-        senderNote: Math.random().toString(36).substring(2),
-        gasLimit: '40000',
-        gasPrice: '20',
-        mnemonic: mnemonic,
-        index: 1,
-      })
-    case 'bnb':
-      let bnbTotalCut: any = 0
-
-      let privateKey: any = decryptEncryption(wallet.private_key)
-
-      if (withdrawalCutWithdrawalAdminFee > 0 && managerWalletAddress) {
-
-        const dueFeeAccount = await accountNameExist("due-fee")
-
-        if(dueFeeAccount['status'] !== "failed") {
-          const dueFeeWallet = await dueFeeAccount
-            .related('wallets')
-            .query()
-            .where('currency_id', currency.id)
-            .first()
-
-            await accountToAccountTransaction(
-              wallet.id,
-              dueFeeWallet.tat_account_id,
-              withdrawalCutWithdrawalAdminFee.toString(),
-              'Transfer'
-            )
-
-            ManagerDueFee.create({
-              wallet_id: wallet.id,
-              amount: withdrawalCutWithdrawalAdminFee
-            });
-
-            bnbTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee)
-        }
-
-        // let bnbGas = {
-        //   gasLimit: 21000,
-        //   gasPrice: 20,
-        // }
-
-        // await sendBnbOffchainTransaction({
-        //   senderAccountId: wallet.tat_account_id,
-        //   address: managerAddress,
-        //   amount: withdrawalCutWithdrawalAdminFee.toFixed(8).toString(),
-        //   compliant: false,
-        //   gasPrice: bnbGas.gasPrice.toString(),
-        //   gasLimit: bnbGas.gasLimit.toString(),
-        //   mnemonic: mnemonic,
-        //   privateKey: privateKey,
-        //   senderNote: Math.random().toString(36).substring(2),
-        // })
-
-        // networkFee = new BigNumber(bnbGas.gasLimit)
-        //   .multipliedBy(bnbGas.gasPrice)
-        //   .dividedBy(1000000000)
-        //   .toFixed(9)
-
-        // bnbTotalCut = parseFloat(withdrawalCutWithdrawalAdminFee) + parseFloat(networkFee)
-      }
-
-      let bnbGas = {
-        gasLimit: 21000,
-        gasPrice: 50,
-      }
-
-      networkFee = new BigNumber(bnbGas.gasLimit)
-        .multipliedBy(bnbGas.gasPrice)
-        .dividedBy(1000000000)
-        .toFixed(9)
-
-      amount = new BigNumber(amount).minus(networkFee).minus(bnbTotalCut).toString()
-
-      return await sendBnbOffchainTransaction({
-        senderAccountId: wallet.tat_account_id,
-        address: receivingAddress,
-        amount: amount,
-        compliant: false,
-        senderNote: Math.random().toString(36).substring(2),
-        gasPrice: bnbGas.gasPrice.toString(),
-        gasLimit: bnbGas.gasLimit.toString(),
-        mnemonic: mnemonic,
-        privateKey: privateKey,
-      })
-    case 'ada':
-      return await sendAdaOffchainTransaction(isTest, {
-        senderAccountId: wallet.tat_account_id,
-        address: receivingAddress,
-        amount: totalSendAmount,
-        compliant: false,
-        fee: '0.1',
-        // index: 0,
-        mnemonic: mnemonic,
-        xpub: xpub,
         senderNote: Math.random().toString(36).substring(2),
       })
   }

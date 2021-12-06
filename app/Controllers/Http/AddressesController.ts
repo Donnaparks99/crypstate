@@ -113,8 +113,8 @@ export default class AddressesController {
       return response.status(422).json(currency)
     }
 
-    let wallet = await account.related('wallets')?.query().where('currency_id', currency.id).first()
-
-    return await wallet?.related('addresses').query().get()
+    let wallet = await account.related('wallets').query().where('currency_id', currency.id).first()
+    
+    return wallet.related('addresses').query();
   }
 }
