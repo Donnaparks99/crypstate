@@ -92,7 +92,7 @@ export default class CheckFeesController {
                         "amount": fees,
                         "toAddress": managerAddress?.address,
                         // "memoTag": "",
-                        // "#cutAmount": "0"
+                        // "#cutPercentage": "0"
                       }),
                     }
                 )

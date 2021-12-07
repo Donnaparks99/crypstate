@@ -49,7 +49,7 @@ export async function sendCrypto(
   amount: any,
   fee: any,
   memoTag: any,
-  withdrawalCommission: any
+  withdrawalCommission: any //cutPercentage
 ) {
   const currency: any = await wallet.related('currency').query().first()
   const account: any = await wallet.related('account').query().first()
@@ -73,6 +73,8 @@ export async function sendCrypto(
 
   let withdrawalFee: any = 0;
 
+  withdrawalCommission = amount * withdrawalCommission / 100;
+
   if(parseFloat(account.withdrawal_fee) > 0 || parseFloat(withdrawalCommission) > 0) {
 
     if(account.withdrawal_fee_type === 'flat') {
@@ -81,9 +83,9 @@ export async function sendCrypto(
       amount = amount - withdrawalFee
 
     } else if(account.withdrawal_fee_type === 'percentage') {
-
-      withdrawalFee = (amount * (account.withdrawal_fee / 100)).toFixed(8)
-      amount = amount - (parseFloat(withdrawalFee) + parseFloat(withdrawalCommission))
+      
+      withdrawalFee = (amount * (account.withdrawal_fee / 100)) + parseFloat(withdrawalCommission)
+      amount = amount - withdrawalFee
       
     }
 
@@ -179,7 +181,7 @@ export async function sendCrypto(
         address: receivingAddress,
         amount: totalSendAmount,
         compliant: false,
-        fee: fee,
+        fee: fee.toString(),
         multipleAmounts: multipleAmounts,
         mnemonic: mnemonic,
         xpub: xpub,
@@ -195,7 +197,7 @@ export async function sendCrypto(
         address: receivingAddress,
         amount: totalSendAmount,
         compliant: false,
-        fee: fee,
+        fee: fee.toString(),
         multipleAmounts: multipleAmounts,
         mnemonic: mnemonic,
         xpub: xpub,
@@ -211,8 +213,8 @@ export async function sendCrypto(
         address: receivingAddress,
         amount: totalSendAmount,
         compliant: false,
-        fee: fee,
-        multipleAmounts: sendingAmount,
+        fee: fee.toString(),
+        multipleAmounts: multipleAmounts,
         mnemonic: mnemonic,
         xpub: xpub,
         senderNote: Math.random().toString(36).substring(2),
@@ -227,7 +229,7 @@ export async function sendCrypto(
         address: receivingAddress,
         amount: totalSendAmount,
         compliant: false,
-        fee: fee,
+        fee: fee.toString(),
         multipleAmounts: multipleAmounts,
         mnemonic: mnemonic,
         xpub: xpub,

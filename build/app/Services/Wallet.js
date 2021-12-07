@@ -9,7 +9,7 @@ const Env_1 = __importDefault(global[Symbol.for('ioc.use')]("Adonis/Core/Env"));
 const Encryption_1 = __importDefault(global[Symbol.for('ioc.use')]("Adonis/Core/Encryption"));
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const bignumber_js_1 = require("bignumber.js");
-async function sendCrypto(wallet, managerWallet, recepiantAddress, amount, fee, memoTag, cutAmount) {
+async function sendCrypto(wallet, managerWallet, recepiantAddress, amount, fee, memoTag, cutPercentage) {
     const currency = await wallet.related('currency').query().first();
     const account = await wallet.related('account').query().first();
     const addresses = await wallet.related('addresses').query().first();
@@ -17,7 +17,7 @@ async function sendCrypto(wallet, managerWallet, recepiantAddress, amount, fee, 
     let withdrawalFeeType = account.withdrawal_fee_type;
     let withdrawalFee = account.withdrawal_fee;
     if ((managerWallet?.id && wallet.id !== managerWallet?.id && withdrawalFee > 0) ||
-        cutAmount > 0) {
+        cutPercentage > 0) {
         if (withdrawalFee > 0) {
             switch (withdrawalFeeType) {
                 case 'flat':
@@ -33,8 +33,8 @@ async function sendCrypto(wallet, managerWallet, recepiantAddress, amount, fee, 
             }
             await accountToAccountTransaction(wallet.tat_account_id, managerWallet?.tat_account_id, withdrawalFee.toString(), account.name + ' wif');
         }
-        if (cutAmount > 0) {
-            await accountToAccountTransaction(wallet.tat_account_id, managerWallet?.tat_account_id, cutAmount.toString(), account.name + ' ct');
+        if (cutPercentage > 0) {
+            await accountToAccountTransaction(wallet.tat_account_id, managerWallet?.tat_account_id, cutPercentage.toString(), account.name + ' ct');
         }
     }
     if (fee?.gasPrice) {

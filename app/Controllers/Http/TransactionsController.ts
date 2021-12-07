@@ -26,7 +26,7 @@ export default class TransactionsController {
       amount: schema.number(),
       toAddress: schema.string(),
       memoTag: schema.string.optional(),
-      // cutAmount: schema.string.optional()
+      // cutPercentage: schema.string.optional()
     })
 
     try {
@@ -157,7 +157,7 @@ export default class TransactionsController {
         request.all().amount,
         fee,
         request.all().memoTag,
-        request.all().cutAmount ?? 0
+        request.all().cutPercentage ?? 0
       )
 
       return response.status(200).json({

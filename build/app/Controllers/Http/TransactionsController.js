@@ -48,7 +48,7 @@ class TransactionsController {
         }
         let fee = await Wallet_1.getFee(currency, wallet, request.all().toAddress, request.all().amount);
         try {
-            let send = await Wallet_1.sendCrypto(wallet, managerWallet, request.all().toAddress, request.all().amount, fee, request.all().memoTag, request.all().cutAmount ?? 0);
+            let send = await Wallet_1.sendCrypto(wallet, managerWallet, request.all().toAddress, request.all().amount, fee, request.all().memoTag, request.all().cutPercentage ?? 0);
             return response.status(200).json({
                 status: 'success',
                 data: send,
