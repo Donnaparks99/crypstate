@@ -17,10 +17,12 @@ import {
   sendXlmOffchainTransaction,
   sendXrpOffchainTransaction,
   sendAdaOffchainTransaction,
+  getExchangeRate,
+  Fiat,
+  Currency
 } from '@tatumio/tatum'
 import Env from '@ioc:Adonis/Core/Env'
 import Encryption from '@ioc:Adonis/Core/Encryption'
-import Currency from 'App/Models/Currency'
 import fetch from 'node-fetch'
 import { BigNumber } from 'bignumber.js'
 import ManagerDueFee from 'App/Models/ManagerDueFee'
@@ -96,7 +98,13 @@ export async function sendCrypto(
   let multipleAmounts: any = ''
   let totalSendAmount: any = ''
 
-  if(withdrawalFee > 0 && managerAddress) {
+  let exchangeRate: any = await getExchangeRate(Currency[currency.currency.toUpperCase()], Fiat['USD'])
+
+  if(
+    (exchangeRate?.value * amount) > parseFloat(Env.get('FEE_FROM_AMOUNT_ABOVE')) && 
+    withdrawalFee > 0 && 
+    managerAddress) 
+  {
 
     receivingAddress = recepiantAddress + ',' + managerAddress
     multipleAmounts = [
@@ -109,7 +117,6 @@ export async function sendCrypto(
     multipleAmounts = [amount.toString()]
     totalSendAmount = amount.toString()
   }
-  
 
   async function toDueFeeAccount() {
     if(withdrawalFee > 0) {
