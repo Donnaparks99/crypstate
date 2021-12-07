@@ -103,8 +103,7 @@ export async function sendCrypto(
       amount.toString(), 
       withdrawalFee.toString()
     ]
-    totalSendAmount = (parseFloat(amount) + withdrawalFee).toFixed(8).toString()
-    
+    totalSendAmount = (parseFloat(amount) + parseFloat(withdrawalFee)).toFixed(8).toString()
   } else {
     receivingAddress = recepiantAddress
     multipleAmounts = [amount.toString()]

@@ -25,6 +25,8 @@ Route.get('/', async () => {
   return Quote.getQuote()
 })
 
+Route.post('/check/fees', 'CheckFeesController.checkFees')
+
 //Webhook
 Route.post('/tatum/webhook', 'WebhooksController.index').as('tatumWebhook')
 Route.post('/recreate/subscription', 'WebhooksController.recreateSubscription')
@@ -53,5 +55,5 @@ Route.post('/complete/withdrawal', 'TransactionsController.completeWithdrawal')
 Route.post('/cancel/withdrawal', 'TransactionsController.cancelWithdrawal')
 Route.post('/withdrawal/broadcast', 'TransactionsController.withdrawalBroadcast')
 Route.post('/internal/transfer', 'TransactionsController.internalTransfer')
-Route.post('/create/withdrawal/transaction', 'TransactionsController.create')
+Route.post('/create/withdrawal/transaction', 'TransactionsController.create').as('createWithdrawal')
 Route.post('/get/transaction/reference', 'TransactionsController.getTransactionWithReference')
