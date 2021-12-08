@@ -70,6 +70,17 @@ export async function sendCrypto(
     managerWalletAddress?.message
   let networkFee: any = 0
 
+  const mnemonic: any = decryptEncryption(wallet.mnemonic)
+  const xpub: any = decryptEncryption(wallet.xpub)
+  const secret: any = decryptEncryption(wallet.secret)
+
+  
+  let receivingAddress: any = ''
+  let multipleAmounts: any = ''
+  let totalSendAmount: any = ''
+
+  let exchangeRate: any = await getExchangeRate(Currency[currency.currency.toUpperCase()], Fiat['USD'])
+  exchangeRate = parseFloat(exchangeRate?.value ?? 0);
 
   let withdrawalFee: any = 0;
 
@@ -91,29 +102,32 @@ export async function sendCrypto(
 
   }
 
-  const mnemonic: any = decryptEncryption(wallet.mnemonic)
-  const xpub: any = decryptEncryption(wallet.xpub)
-  const secret: any = decryptEncryption(wallet.secret)
+  if(fee) {
+    amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
+  }
 
-  
-  let receivingAddress: any = ''
-  let multipleAmounts: any = ''
-  let totalSendAmount: any = ''
-
-  let exchangeRate: any = await getExchangeRate(Currency[currency.currency.toUpperCase()], Fiat['USD'])
-
-  if(
-    (exchangeRate?.value * amount) > parseFloat(Env.get('FEE_FROM_AMOUNT_ABOVE')) && 
+  if( 
     withdrawalFee > 0 && 
     managerAddress) 
   {
+    if((exchangeRate * amount) < parseFloat(Env.get('FEE_FROM_AMOUNT_ABOVE'))) {
 
-    receivingAddress = recepiantAddress + ',' + managerAddress
-    multipleAmounts = [
-      amount.toString(), 
-      withdrawalFee.toString()
-    ]
-    totalSendAmount = (parseFloat(amount) + parseFloat(withdrawalFee)).toFixed(8).toString()
+      let newSendAmount = parseFloat(amount) + parseFloat(withdrawalFee);
+      
+      receivingAddress = recepiantAddress
+      multipleAmounts = [newSendAmount.toString()]
+      totalSendAmount = newSendAmount.toString()
+
+    } else {
+
+      receivingAddress = recepiantAddress + ',' + managerAddress
+      multipleAmounts = [
+        amount.toString(), 
+        withdrawalFee.toString()
+      ]
+      totalSendAmount = (parseFloat(amount) + parseFloat(withdrawalFee)).toFixed(8).toString()
+    }
+
   } else {
     receivingAddress = recepiantAddress
     multipleAmounts = [amount.toString()]
@@ -174,8 +188,6 @@ export async function sendCrypto(
 
     case 'btc':
 
-      amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
-
       return await sendBitcoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
@@ -189,8 +201,6 @@ export async function sendCrypto(
       })
 
     case 'bch':
-
-      amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
 
       return await sendBitcoinCashOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
@@ -206,8 +216,6 @@ export async function sendCrypto(
 
     case 'ltc':
 
-      amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
-
       return await sendLitecoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
@@ -221,8 +229,6 @@ export async function sendCrypto(
       })
 
     case 'doge':
-
-      amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
 
       return await sendDogecoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
