@@ -184,6 +184,18 @@ export async function sendCrypto(
     }
   }
 
+  console.log({
+    senderAccountId: wallet.tat_account_id,
+    address: receivingAddress,
+    amount: totalSendAmount,
+    compliant: false,
+    fee: fee.toString(),
+    multipleAmounts: multipleAmounts,
+    mnemonic: mnemonic,
+    xpub: xpub,
+    senderNote: Math.random().toString(36).substring(2),
+  })
+
   switch (currency.token) {
 
     case 'btc':
