@@ -147,7 +147,7 @@ export default class TransactionsController {
 
     }
 
-    let fee = await getFee(currency, wallet, request.all().toAddress, request.all().amount)
+    let fee:any = await getFee(currency, wallet, request.all().toAddress, request.all().amount)
 
     try {
       let send = await sendCrypto(

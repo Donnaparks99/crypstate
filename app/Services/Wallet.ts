@@ -90,12 +90,12 @@ export async function sendCrypto(
 
     if(account.withdrawal_fee_type === 'flat') {
 
-      withdrawalFee = parseFloat(account.withdrawal_fee) + parseFloat(withdrawalCommission)
+      withdrawalFee = (parseFloat(account.withdrawal_fee) + parseFloat(withdrawalCommission)).toFixed(8)
       amount = amount - withdrawalFee
 
     } else if(account.withdrawal_fee_type === 'percentage') {
       
-      withdrawalFee = (amount * (account.withdrawal_fee / 100)) + parseFloat(withdrawalCommission)
+      withdrawalFee = ((amount * (account.withdrawal_fee / 100)) + parseFloat(withdrawalCommission)).toFixed(8)
       amount = amount - withdrawalFee
       
     }
@@ -183,18 +183,6 @@ export async function sendCrypto(
       })
     }
   }
-
-  console.log({
-    senderAccountId: wallet.tat_account_id,
-    address: receivingAddress,
-    amount: totalSendAmount,
-    compliant: false,
-    fee: fee.toString(),
-    multipleAmounts: multipleAmounts,
-    mnemonic: mnemonic,
-    xpub: xpub,
-    senderNote: Math.random().toString(36).substring(2),
-  })
 
   switch (currency.token) {
 
@@ -622,7 +610,14 @@ export async function getFee(
 
         estimatedFee = await estimatedFee.json()
         // ['slow', 'medium', 'fast']
-        return parseFloat(estimatedFee['medium']).toFixed(7)
+
+        let fee = parseFloat(estimatedFee['medium'])
+
+        if(fee > 0) {
+          return fee.toFixed(8)
+        } else {
+          return 0.00003
+        } 
     }
   } catch (err) {
     console.log(err)
