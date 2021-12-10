@@ -102,8 +102,10 @@ export async function sendCrypto(
 
   }
 
-  if(fee) {
-    amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
+  if(['btc', 'bch', 'ltc', 'doge'].includes(currency.token)) {
+    if(fee) {
+      amount = (parseFloat(amount) - parseFloat(fee)).toFixed(8)
+    }
   }
 
   if( 
@@ -256,7 +258,7 @@ export async function sendCrypto(
           .dividedBy(1000000000)
           .toFixed(9)
 
-        amount = new BigNumber(amount).minus(networkFee).toString()
+        amount = new BigNumber(amount).minus(networkFee).toFixed(8)
 
         let sendEth = await sendEthOffchainTransaction(isTest, {
           address: recepiantAddress,
