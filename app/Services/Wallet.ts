@@ -260,7 +260,7 @@ export async function sendCrypto(
 
         let sendEth = await sendEthOffchainTransaction(isTest, {
           address: recepiantAddress,
-          amount: amount,
+          amount: amount.toString(),
           compliant: false,
           index: 1,
           gasPrice: ethGas.gasPrice.toString(),
@@ -274,7 +274,7 @@ export async function sendCrypto(
 
         return sendEth;
       } catch (e) {
-        return e
+        throw(e)
       }
 
     case 'erc20':
@@ -295,7 +295,7 @@ export async function sendCrypto(
 
         let sendErc20 = await sendEthErc20OffchainTransaction(isTest, {
           address: recepiantAddress,
-          amount: amount,
+          amount: amount.toString(),
           compliant: false,
           index: 1,
           gasPrice: erc20Gas.gasPrice.toString(),
@@ -309,7 +309,7 @@ export async function sendCrypto(
 
         return sendErc20;
       } catch (e) {
-        return e
+        throw(e)
       }
 
     case 'bsc':
@@ -329,7 +329,7 @@ export async function sendCrypto(
 
         let sendBsc = await sendBscOffchainTransaction(isTest, {
           address: recepiantAddress,
-          amount: amount,
+          amount: amount.toString(),
           compliant: false,
           index: 1,
           gasPrice: BscGas.gasPrice.toString(),
@@ -345,7 +345,7 @@ export async function sendCrypto(
 
       } catch (e) {
 
-        return e
+        throw(e)
 
       }
 
@@ -372,7 +372,7 @@ export async function sendCrypto(
 
         return sendAda;
       } catch (e) {
-        return e
+        throw(e)
       }
 
     case 'trx':
@@ -385,7 +385,7 @@ export async function sendCrypto(
         let sendTron = await sendTronOffchainTransaction(isTest, {
           senderAccountId: wallet.tat_account_id,
           address: recepiantAddress,
-          amount: amount,
+          amount: amount.toString(),
           compliant: false,
           fee: tronFee.toString(),
           index: 1,
@@ -398,7 +398,7 @@ export async function sendCrypto(
         return sendTron;
 
       } catch (e) {
-        return e
+        throw(e)
       }
 
     case 'xrp':
@@ -412,7 +412,7 @@ export async function sendCrypto(
         senderAccountId: wallet.tat_account_id,
         account: xrpFromAddress.address,
         address: recepiantAddress,
-        amount: amount,
+        amount: amount.toString(),
         compliant: false,
         sourceTag: memoTag,
         secret: secret,
@@ -430,7 +430,7 @@ export async function sendCrypto(
         senderAccountId: wallet.tat_account_id,
         fromAccount: xlmFromAddress.address,
         address: recepiantAddress,
-        amount: amount,
+        amount: amount.toString(),
         secret: secret,
         compliant: false,
         senderNote: Math.random().toString(36).substring(2),
