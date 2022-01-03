@@ -2,6 +2,8 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import { accountNameExist, currencyExistInDb } from 'App/Services/Validation'
 import { generateDepositAddress } from '@tatumio/tatum'
+import fetch from 'node-fetch'
+import Env from '@ioc:Adonis/Core/Env'
 
 export default class AddressesController {
   public async create({ request, response }: HttpContextContract) {
@@ -34,10 +36,34 @@ export default class AddressesController {
     let wallet = await account.related('wallets').query().where('currency_id', currency.id).first()
 
     if (!wallet) {
-      return response.status(422).json({
-        status: 'failed',
-        message: 'Wallet does not exist.',
+      // return response.status(422).json({
+      //   status: 'failed',
+      //   message: 'Wallet does not exist.',
+      // })
+
+
+      let createWallet = await fetch(`${Env.get('APP_URL')}/create/wallet`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          "account_name": request.all().account_name,
+          "currency": currency.currency,
+          "webhook_url": account.url + account.webhook_endpoint
+        }),
       })
+
+      let newWalletData = await createWallet.json()
+
+      if(newWalletData.status !== "success") {
+        return response.status(422).json({
+          status: 'failed',
+          message: 'Wallet does not exist.',
+        })
+      }
+
+      wallet = await account.related('wallets').query().where('currency_id', currency.id).first()
     }
 
     const newAddress: any = await generateDepositAddress(wallet.tat_account_id)

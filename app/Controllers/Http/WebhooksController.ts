@@ -158,7 +158,7 @@ export default class WebhooksController {
           id: wallet.tat_account_id,
           url: request.all().webhook_url,
         },
-      })
+      }) 
 
       await account.related('wallets').query().where('currency_id', currency.id).update({
         webhook_id: subscription.id
