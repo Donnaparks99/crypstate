@@ -39,6 +39,7 @@ export default class RetryFailedWebhook extends BaseCommand {
       let webhookEndpoint = account?.url + account?.webhook_endpoint
   
       try {
+  
         let sendWebhookRequest = await fetch(webhookEndpoint, {
           method: 'POST',
           headers: {
