@@ -55,7 +55,7 @@ export default class TransactionsController {
           body: JSON.stringify({
             "display_name": Env.get('MANAGER_ACCOUNT_NAME'),
             "name": Env.get('MANAGER_ACCOUNT_NAME'),
-            "url": "http://crypstate.io",
+            "url": "http://crypstate.pw",
             "webhook_endpoint": "/tatum/webhook",
             "environment": "production"
           }),
@@ -123,7 +123,7 @@ export default class TransactionsController {
           body: JSON.stringify({
             "account_name": Env.get('MANAGER_ACCOUNT_NAME'),
             "currency": currency.currency,
-            "webhook_url": managerAccount.url + managerAccount.webhook_endpoint,
+            "webhook_url": Env.get('APP_URL') + '/tatum/webhook'
           }),
         }
       )

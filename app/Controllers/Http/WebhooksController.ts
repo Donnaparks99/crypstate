@@ -13,55 +13,92 @@ import {
   obtainReportForSubscription,
 } from '@tatumio/tatum'
 import { accountNameExist, currencyExistInDb } from 'App/Services/Validation'
+import FailedWebhookRequest from 'App/Models/FailedWebhookRequest'
 
 export default class WebhooksController {
-  public async index({ request, response }: HttpContextContract) {
-    const wallet = await Wallet.findBy('tat_account_id', request.all().accountId)
+  // public async index({ request, response }: HttpContextContract) {
+  //   const wallet = await Wallet.findBy('tat_account_id', request.all().accountId)
 
-    if (wallet) {
-      const account: any = await wallet.related('account').query().first()
-      const currency: any = await wallet?.related('currency').query().first()
-      const address: any = await wallet.related('addresses').query().first()
+  //   if (wallet) {
+  //     const account: any = await wallet.related('account').query().first()
+  //     const currency: any = await wallet?.related('currency').query().first()
+  //     const address: any = await wallet.related('addresses').query().first()
 
-      let fetchTransactions = await fetch(`${Env.get('APP_URL')}/get/wallet/transactions`, {
+  //     let fetchTransactions = await fetch(`${Env.get('APP_URL')}/get/wallet/transactions`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'content-type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         account_name: account.name,
+  //         currency: currency.currency,
+  //         pageSize: '50',
+  //         offset: 0,
+  //       }),
+  //     })
+
+  //     let transactions = await fetchTransactions.json()
+
+  //     let transaction = transactions?.data?.filter(
+  //       (transactions) => transactions.txId === request.all().txId
+  //     )[0]
+
+  //     switch (currency.token) {
+  //       case 'eth':
+  //       case 'erc20':
+  //       case 'bsc':
+  //       case 'bnb':
+  //         let fee = await getFee(currency, wallet, address?.address, transaction.amount)
+
+  //         await internalAccountToAccountTransfer(
+  //           currency,
+  //           wallet,
+  //           transaction.address, // fromAddress
+  //           address?.address, // toAddress
+  //           transaction.amount,
+  //           fee
+  //         )
+  //     }
+
+  //     delete transaction.accountId
+  //     delete transaction.anonymous
+  //     delete transaction.marketValue
+  //   }
+  // }
+
+  public async sendWebhook({request, response }: HttpContextContract) {
+
+    const wallet: any = await Wallet.findBy('tat_account_id', request.all().accountId)
+    const account: any = await wallet?.related('account').query().first()
+    let webhookEndpoint = account?.url + account?.webhook_endpoint
+
+    try {
+
+      let sendWebhookRequest = await fetch(webhookEndpoint, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
         },
-        body: JSON.stringify({
-          account_name: account.name,
-          currency: currency.currency,
-          pageSize: '50',
-          offset: 0,
-        }),
+        body: JSON.stringify(request.all()),
       })
 
-      let transactions = await fetchTransactions.json()
+      let sendWebhookResponse = await sendWebhookRequest.json()
 
-      let transaction = transactions?.data?.filter(
-        (transactions) => transactions.txId === request.all().txId
-      )[0]
+      return response.status(200).json({
+        "status": "success"
+      })
+    } catch (err) {
+      await FailedWebhookRequest.create({
+        account_id: account.id,
+        wallet_id: wallet?.id,
+        endpoint: webhookEndpoint,
+        txid: request.all().txId,
+        request_body: JSON.stringify(request.all())
+      });
 
-      switch (currency.token) {
-        case 'eth':
-        case 'erc20':
-        case 'bsc':
-        case 'bnb':
-          let fee = await getFee(currency, wallet, address?.address, transaction.amount)
-
-          await internalAccountToAccountTransfer(
-            currency,
-            wallet,
-            transaction.address, // fromAddress
-            address?.address, // toAddress
-            transaction.amount,
-            fee
-          )
-      }
-
-      delete transaction.accountId
-      delete transaction.anonymous
-      delete transaction.marketValue
+      return response.status(401).json({
+        "status": "failed"
+      })
     }
   }
 
@@ -100,12 +137,20 @@ export default class WebhooksController {
 
     await cancelExistingSubscription(wallet.webhook_id)
 
+    let webhookUrl: any 
+
+    if(request.all().webhook_url.length > 1) {
+      webhookUrl = request.all().webhook_url
+    } else {
+      webhookUrl = Env.get('APP_URL') + '/tatum/webhook'
+    }
+
     try {
       const subscription = await createNewSubscription({
         type: SubscriptionType.ACCOUNT_INCOMING_BLOCKCHAIN_TRANSACTION,
         attr: {
           id: wallet.tat_account_id,
-          url: request.all().webhook_url,
+          url: webhookUrl,
         },
       })
 
@@ -117,8 +162,6 @@ export default class WebhooksController {
     } catch (err) {
       return err.response?.data
     }
-
-    
   }
 
   public async createSubscription({ request, response }: HttpContextContract) {
@@ -151,12 +194,20 @@ export default class WebhooksController {
 
     let wallet = await account.related('wallets').query().where('currency_id', currency.id).first()
 
+    let webhookUrl: any 
+
+    if(request.all().webhook_url.length > 1) {
+      webhookUrl = request.all().webhook_url
+    } else {
+      webhookUrl = Env.get('APP_URL') + '/tatum/webhook'
+    }
+
     try {
       const subscription = await createNewSubscription({
         type: SubscriptionType.ACCOUNT_INCOMING_BLOCKCHAIN_TRANSACTION,
         attr: {
           id: wallet.tat_account_id,
-          url: request.all().webhook_url,
+          url: webhookUrl
         },
       }) 
 

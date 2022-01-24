@@ -50,7 +50,7 @@ export default class AddressesController {
         body: JSON.stringify({
           "account_name": request.all().account_name,
           "currency": currency.currency,
-          "webhook_url": account.url + account.webhook_endpoint
+          "webhook_url": Env.get('APP_URL') + '/tatum/webhook'
         }),
       })
 

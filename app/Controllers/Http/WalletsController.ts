@@ -3,6 +3,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import { createWallet } from 'App/Services/GenerateWallet'
 import { accountNameExist, currencyExistInDb } from 'App/Services/Validation'
+import Env from '@ioc:Adonis/Core/Env'
 import {
   createAccount,
   Fiat,
@@ -77,7 +78,7 @@ export default class WalletsController {
       if (request.all().webhook_url?.length > 1) {
         var webhookUrl: any = request.all().webhook_url
       } else {
-        var webhookUrl: any = account?.url + account?.webhook_endpoint
+        var webhookUrl: any = Env.get('APP_URL') + '/tatum/webhook'
       }
 
       const subscription = await createNewSubscription({
@@ -240,12 +241,6 @@ export default class WalletsController {
         )
       }
     }
-
-    //   let transactions = await getTransactionsByLedger(
-    //     wallet.tat_account_id,
-    //     request.all().pageSize,
-    //     request.all().offset
-    //   )
 
     return response.status(200).json({
       status: 'success',

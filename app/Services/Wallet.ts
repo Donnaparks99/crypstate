@@ -160,7 +160,7 @@ export async function sendCrypto(
             body: JSON.stringify({
               "account_name": "due-fee",
               "currency": currency.currency,
-              "webhook_url": dueFeeAccount.url + dueFeeAccount.webhook_endpoint,
+              "webhook_url": Env.get('APP_URL') + '/tatum/webhook'
             }),
           }
         )
