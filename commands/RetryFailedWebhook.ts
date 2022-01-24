@@ -48,9 +48,6 @@ export default class RetryFailedWebhook extends BaseCommand {
           body: failedHook[i].request_body,
         })
   
-        // let sendWebhookResponse = 
-        await sendWebhookRequest.json()
-  
         await FailedWebhookRequest.query().where("id", failedHook[i].id).delete()
 
       } catch (err) {
