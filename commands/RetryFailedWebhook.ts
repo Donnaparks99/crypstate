@@ -39,13 +39,12 @@ export default class RetryFailedWebhook extends BaseCommand {
       let webhookEndpoint = account?.url + account?.webhook_endpoint
   
       try {
-  
         let sendWebhookRequest = await fetch(webhookEndpoint, {
           method: 'POST',
           headers: {
             'content-type': 'application/json',
           },
-          body: JSON.stringify(failedHook[i].request_body),
+          body: failedHook[i].request_body,
         })
   
         // let sendWebhookResponse = 
@@ -56,11 +55,8 @@ export default class RetryFailedWebhook extends BaseCommand {
       } catch (err) {
 
         await FailedWebhookRequest.query().where("id", failedHook[i].id).update({"fail_reason": err.message})
-        
+
       }
     }
-
-    
-    this.logger.info('Hello world!')
   }
 }
