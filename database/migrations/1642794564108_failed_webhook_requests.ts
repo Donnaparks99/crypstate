@@ -11,7 +11,8 @@ export default class FailedWebhookRequests extends BaseSchema {
       table.integer('wallet_id').notNullable()
       table.string('endpoint').notNullable()
       table.string('txid').notNullable()
-      table.text('request_body').nullable()
+      table.text('request_body').notNullable()
+      table.text('fail_reason').nullable()
 
       /**
        * Uses timestamptz for PostgreSQL and DATETIME2 for MSSQL

@@ -24,6 +24,30 @@
       "aliases": [],
       "flags": []
     },
+    "extract:fee": {
+      "settings": {
+        "loadApp": false,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/ExtractFee",
+      "commandName": "extract:fee",
+      "description": "",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
+    "failed:webhook": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": false
+      },
+      "commandPath": "./commands/RetryFailedWebhook",
+      "commandName": "failed:webhook",
+      "description": "",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
     "dump:rcfile": {
       "settings": {},
       "commandPath": "@adonisjs/core/commands/DumpRc",

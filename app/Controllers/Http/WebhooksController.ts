@@ -82,19 +82,25 @@ export default class WebhooksController {
         body: JSON.stringify(request.all()),
       })
 
-      let sendWebhookResponse = await sendWebhookRequest.json()
+      // let sendWebhookResponse = 
+      await sendWebhookRequest.json()
 
       return response.status(200).json({
         "status": "success"
       })
     } catch (err) {
-      await FailedWebhookRequest.create({
-        account_id: account.id,
-        wallet_id: wallet?.id,
-        endpoint: webhookEndpoint,
-        txid: request.all().txId,
-        request_body: JSON.stringify(request.all())
-      });
+      let hasFailedBefore = await FailedWebhookRequest.query().where('txid', request.all().txId).first();
+
+      if(!hasFailedBefore?.id) {
+        await FailedWebhookRequest.create({
+          account_id: account.id,
+          wallet_id: wallet?.id,
+          endpoint: webhookEndpoint,
+          txid: request.all().txId,
+          request_body: JSON.stringify(request.all()),
+          fail_reason: err.message
+        });
+      }
 
       return response.status(401).json({
         "status": "failed"

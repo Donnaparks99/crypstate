@@ -22,6 +22,9 @@ export default class FailedWebhookRequest extends BaseModel {
   @column()
   public request_body: any
 
+  @column()
+  public fail_reason: string
+
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 
