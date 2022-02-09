@@ -59,20 +59,27 @@ export default class WalletsController {
 
     if(currencyWithTags.includes(currency.tatum_currency)) {
 
+      let firstWalletWithTag = await currency.related('wallets').query().first();
+
+      if(!firstWalletWithTag) {
+        return response.status(422).json({
+          status: 'failed',
+          message: `First ${currency.tatum_currency} wallet not fund.`,
+        })
+      }
+
       let currencyWithTagNewWallet = await account.related('wallets').create({
         currency_id: currency.id,
-        tat_account_id: Math.random().toString(36).substring(2),
-        account_code: `${request.all().account_name.toUpperCase()}-${request
-          .all()
-          .currency.toUpperCase()}`,
-        account_number: Math.random().toString(36).substring(2),
-        customer_id: Math.random().toString(36).substring(2),
-        webhook_id: null,
-        mnemonic: null,
-        xpub: null,
-        address: null, // get address
-        secret: null, // get scre
-        private_key: null, // get priv
+        tat_account_id: firstWalletWithTag.tat_account_id,
+        account_code: firstWalletWithTag.account_code,
+        account_number: firstWalletWithTag.account_number,
+        customer_id: firstWalletWithTag.customer_id,
+        webhook_id: firstWalletWithTag.webhook_id,
+        mnemonic: firstWalletWithTag.mnemonic,
+        xpub: firstWalletWithTag.xpub,
+        address: firstWalletWithTag.address, // get address
+        secret: firstWalletWithTag.secret, // get scre
+        private_key: firstWalletWithTag.private_key, // get priv
       })
 
       const currencyWithTagNewAddress: any = await generateDepositAddress(currencyWithTagNewWallet.tat_account_id)

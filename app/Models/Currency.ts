@@ -48,12 +48,15 @@ export default class Currency extends BaseModel {
   @column()
   public has_secret: boolean
 
+  @column()
+  public contract_address: string
+
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime
 
-  @hasMany(() => Wallet, {})
-  public wallets: HasMany<typeof Wallet>
+  @hasMany(() => Wallet, {foreignKey: 'currency_id' })
+  public wallets: HasMany<typeof Wallet >
 }

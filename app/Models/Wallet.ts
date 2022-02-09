@@ -24,6 +24,12 @@ export default class Wallet extends BaseModel {
   public account_code: string
 
   @column()
+  public deposited: number
+
+  @column()
+  public withdrawn: number
+
+  @column()
   public account_number: string
 
   @column()
