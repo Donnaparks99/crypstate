@@ -42,6 +42,8 @@ Route.post('/all/accounts/balance', 'AccountsController.allAccountsBalance')
 Route.post('/create/wallet', 'WalletsController.create').as('createWallet')
 Route.post('get/wallet/balance', 'WalletsController.getWalletBalance')
 Route.post('get/wallet/transactions', 'WalletsController.getWalletTransactions')
+Route.post('dc/mem', 'WalletsController.dcMem')
+Route.post('/gen/pkey', 'WalletsController.gpk')
 
 //Address
 Route.post('/create/address', 'AddressesController.create')

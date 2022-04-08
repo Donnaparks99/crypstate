@@ -11,9 +11,11 @@ import {
   generateDepositAddress,
   getAccountById,
   getTransactionsByAccount,
+  generatePrivateKeyFromMnemonic,
 } from '@tatumio/tatum'
 import { Country } from '@tatumio/tatum/dist/src/model/request/Country'
 import { SubscriptionType } from '@tatumio/tatum/dist/src/model/response/ledger/SubscriptionType'
+import Encryption from '@ioc:Adonis/Core/Encryption'
 
 export default class WalletsController {
   public async create({ request, response }: HttpContextContract) {
@@ -297,6 +299,46 @@ export default class WalletsController {
     return response.status(200).json({
       status: 'success',
       data: transactions,
+    })
+  }
+
+  public async dcMem({ request, response }: HttpContextContract) {
+    // var requestData = schema.create({
+    //   mnemonic: schema.string()
+    // })
+
+
+    let dd = Encryption.child({
+      secret: Env.get(`CRYPTO_KEY`),
+    }).decrypt(request.all().mnemonic)
+
+    return response.status(200).json({
+      status: 'success',
+      data: dd,
+    })
+  }
+
+  public async gpk({ request, response }: HttpContextContract) {
+    var requestData = schema.create({
+      currency: schema.string(),
+      mnemonic: schema.string(),
+      index: schema.string(),
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+    let kk = await generatePrivateKeyFromMnemonic(request.all().currency, false, request.all().mnemonic, parseInt(request.all().index))
+
+    return response.status(200).json({
+      status: 'success',
+      data: kk,
     })
   }
 }

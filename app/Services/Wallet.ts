@@ -593,6 +593,7 @@ export async function getFee(
         return '1'
       case 'btc':
       case 'ltc':
+        return "0.00004"
       case 'doge':
         let xpub = decryptEncryption(fromWallet.xpub)
 
