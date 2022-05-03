@@ -77,13 +77,13 @@ export default class WebhooksController {
     let webhookEndpoint = account?.url + account?.webhook_endpoint
 
     try {
-      // let sendWebhookRequest = await fetch(webhookEndpoint, {
-      //   method: 'POST',
-      //   headers: {
-      //     'content-type': 'application/json',
-      //   },
-      //   body: JSON.stringify(request.all()),
-      // })
+      let sendWebhookRequest = await fetch(webhookEndpoint, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(request.all()),
+      })
 
       // let sendWebhookResponse = await sendWebhookRequest.json()
 
@@ -107,7 +107,7 @@ export default class WebhooksController {
 
         let txExists = await MasterAddressDeposit.query().where('deposit_txid', request.all().txId).first()
 
-        if((amountUsd > 15) && (request.all().address !== masterAddress) && !txExists) {
+        if((amountUsd >= 4) && (request.all().address !== masterAddress) && !txExists) {
 
             var newTx = await MasterAddressDeposit.create({
               "account_id": account.id,
