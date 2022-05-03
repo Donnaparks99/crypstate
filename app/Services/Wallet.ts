@@ -601,17 +601,17 @@ export async function getFee(
         'key': 'price_ticker',
         'value': JSON.stringify(ticker)
       })
-    }
-
-    if(moment().isAfter(moment(new Date(tickerData?.updatedAt)).add(6, 'minutes'))) {
-    
-      tickerData.value = JSON.stringify(ticker);
-      tickerData.save();
-    
     } else {
-
-      ticker = JSON.parse(tickerData?.value)
+      if(moment().isAfter(moment(new Date(tickerData?.updatedAt)).add(6, 'minutes'))) {
     
+        tickerData.value = JSON.stringify(ticker);
+        tickerData.save();
+      
+      } else {
+  
+        ticker = JSON.parse(tickerData?.value)
+      
+      }
     }
 
     switch (currency.token) {

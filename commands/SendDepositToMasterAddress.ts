@@ -81,11 +81,12 @@ export default class SendDepositToMasterAddress extends BaseCommand {
           false // shouldChargeFee
         )
 
+        pendingDeposit.misc = JSON.stringify(fee);
+
         if(send.id) {
 
           pendingDeposit.status = "sent";
           pendingDeposit.withdrawal_txid = send.txId;
-          pendingDeposit.misc = JSON.stringify(fee);
           await pendingDeposit.save();
 
         }
