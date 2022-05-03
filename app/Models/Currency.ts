@@ -57,6 +57,6 @@ export default class Currency extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime
 
-  @hasMany(() => Wallet, {foreignKey: 'currency_id' })
+  @hasMany(() => Wallet, {foreignKey: 'currency_id', localKey: 'id' })
   public wallets: HasMany<typeof Wallet >
 }

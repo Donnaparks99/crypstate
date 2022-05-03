@@ -4,7 +4,6 @@ import Wallet from 'App/Models/Wallet'
 import fetch from 'node-fetch'
 import Env from '@ioc:Adonis/Core/Env'
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
-import { internalAccountToAccountTransfer, getFee } from 'App/Services/Wallet'
 import {
   SubscriptionType,
   createNewSubscription,
@@ -14,6 +13,8 @@ import {
 } from '@tatumio/tatum'
 import { accountNameExist, currencyExistInDb } from 'App/Services/Validation'
 import FailedWebhookRequest from 'App/Models/FailedWebhookRequest'
+import MasterAddressDeposit from 'App/Models/MasterAddressDeposit'
+import Account from 'App/Models/Account'
 
 export default class WebhooksController {
   // public async index({ request, response }: HttpContextContract) {
@@ -69,32 +70,77 @@ export default class WebhooksController {
   public async sendWebhook({request, response }: HttpContextContract) {
 
     const wallet: any = await Wallet.findBy('tat_account_id', request.all().accountId)
-    const account: any = await wallet?.related('account').query().first()
+    const currency: any = await wallet.related('currency').query().first()
+    const account: any = await wallet.related('account').query().first()
+    const masterAddress: any = await wallet.related('addresses').query().first()
+
     let webhookEndpoint = account?.url + account?.webhook_endpoint
 
     try {
+      // let sendWebhookRequest = await fetch(webhookEndpoint, {
+      //   method: 'POST',
+      //   headers: {
+      //     'content-type': 'application/json',
+      //   },
+      //   body: JSON.stringify(request.all()),
+      // })
 
-      let sendWebhookRequest = await fetch(webhookEndpoint, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify(request.all()),
-      })
+      // let sendWebhookResponse = await sendWebhookRequest.json()
 
-      // let sendWebhookResponse = 
-      await sendWebhookRequest.json()
+      if(currency.tx_model === 'account' || currency.token === 'trx' || currency.token === 'trc20') {
+
+
+        var ticker = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+
+        ticker = await ticker.json()
+
+        if(["BUSD", "USDT", "USDC"].includes(currency?.currency.toUpperCase())) {
+
+          var amountUsd = parseFloat(request.all().amount)
+
+        } else {
+
+          var exchangeRate = ticker.find(({ symbol }) =>  symbol === `${currency?.currency.toUpperCase()}USDT`)['lastPrice'];
+          var amountUsd = parseFloat(exchangeRate) * parseFloat(request.all().amount)
+
+        }
+
+        let txExists = await MasterAddressDeposit.query().where('deposit_txid', request.all().txId).first()
+
+        if((amountUsd > 15) && (request.all().address !== masterAddress) && !txExists) {
+
+            var newTx = await MasterAddressDeposit.create({
+              "account_id": account.id,
+              "wallet_id": wallet.id,
+              "currency_id": currency.id,
+              "currency_code": currency.currency.toUpperCase(),
+              "token": currency.token.toUpperCase(),
+              "amount": request.all().amount,
+              "from_address": request.all().address,
+              "to_address": masterAddress.address,
+              "status": "pending",
+              "deposit_txid": request.all().txId,
+              "withdrawal_txid": null,
+              "misc": null
+            })
+            
+        }
+
+      }
 
       return response.status(200).json({
         "status": "success"
       })
     } catch (err) {
+
+      console.log(err);
+      
       let hasFailedBefore = await FailedWebhookRequest.query().where('txid', request.all().txId).first();
 
       if(!hasFailedBefore?.id) {
         await FailedWebhookRequest.create({
           account_id: account.id,
-          wallet_id: wallet?.id,
+          wallet_id: wallet.id,
           endpoint: webhookEndpoint,
           txid: request.all().txId,
           request_body: JSON.stringify(request.all()),

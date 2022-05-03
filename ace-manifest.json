@@ -48,6 +48,18 @@
       "aliases": [],
       "flags": []
     },
+    "send_deposit:to_master": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": true
+      },
+      "commandPath": "./commands/SendDepositToMasterAddress",
+      "commandName": "send_deposit:to_master",
+      "description": "Send deposits in an account to master address.",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
     "dump:rcfile": {
       "settings": {},
       "commandPath": "@adonisjs/core/commands/DumpRc",

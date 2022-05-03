@@ -98,15 +98,15 @@ export default class Wallet extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime
 
-  @belongsTo(() => Account, { foreignKey: 'account_id' })
+  @belongsTo(() => Account, { foreignKey: 'account_id', localKey: 'id' })
   public account: BelongsTo<typeof Account>
 
-  @belongsTo(() => Currency, { foreignKey: 'currency_id' })
+  @belongsTo(() => Currency, { foreignKey: 'currency_id', localKey: 'id' })
   public currency: BelongsTo<typeof Currency>
 
-  @hasMany(() => Address, { foreignKey: 'wallet_id' })
+  @hasMany(() => Address, { foreignKey: 'wallet_id', localKey: 'id' })
   public addresses: HasMany<typeof Address>
 
-  @hasMany(() => ManagerDueFee, { foreignKey: 'wallet_id' })
+  @hasMany(() => ManagerDueFee, { foreignKey: 'wallet_id', localKey: 'id' })
   public due_fee: HasMany<typeof ManagerDueFee>
 }

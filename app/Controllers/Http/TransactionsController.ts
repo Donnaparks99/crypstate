@@ -17,6 +17,7 @@ import Encryption from '@ioc:Adonis/Core/Encryption'
 import fetch from 'node-fetch'
 import BigNumber from 'bignumber.js'
 import Route from '@ioc:Adonis/Core/Route'
+import { getAddressBalance } from 'App/Services/Address'
 
 export default class TransactionsController {
   public async create({ request, response }: HttpContextContract) {
@@ -24,9 +25,11 @@ export default class TransactionsController {
       account_name: schema.string(),
       currency: schema.string(),
       amount: schema.number(),
+      fromAddress: schema.string.optional(),
       toAddress: schema.string(),
       memoTag: schema.string.optional(),
-      // cutPercentage: schema.string.optional()
+      // cutPercentage: schema.string.optional(),
+      // shouldChargeFee: scheme.string.optional()
     })
 
     try {
@@ -40,7 +43,6 @@ export default class TransactionsController {
 
     const account = await accountNameExist(request.all().account_name)
     let managerAccount: any = await accountNameExist(Env.get('MANAGER_ACCOUNT_NAME'))
-
     
     if(!managerAccount) {
       let createManagerAccount = await fetch(
@@ -97,11 +99,27 @@ export default class TransactionsController {
 
     let wallet = await account.related('wallets').query().where('currency_id', currency.id).first()
 
-    if (wallet?.currency_id !== currency.id) {
+    if (wallet?.currency_id !== currency.id ) {
       return response.status(422).json({
         status: 'failed',
         message: `Wallet does not exists.`,
       })
+    }
+
+    if(request.all().fromAddress?.length > 1) {
+
+      let fromAddress: any = await wallet.related('addresses').query().where('address', request.all().fromAddress).first()
+
+      if(!fromAddress) {
+        return response.status(422).json({
+          status: 'failed',
+          message: `From address not found.`,
+        })
+      }
+
+      // let addressBalance = await getAddressBalance(currency.token, request.all().fromAddress, currency.contract_address)
+      
+      // if(parseInt(addressBalance) <= 0)
     }
 
     let managerWallet = await managerAccount
@@ -153,11 +171,13 @@ export default class TransactionsController {
       let send = await sendCrypto(
         wallet,
         managerWallet,
+        request.all()?.fromAddress,
         request.all().toAddress,
         request.all().amount,
         fee,
         request.all().memoTag,
-        request.all().cutPercentage ?? 0
+        request.all().cutPercentage ?? 0,
+        request.all().shouldChargeFee ?? true
       )
 
       return response.status(200).json({

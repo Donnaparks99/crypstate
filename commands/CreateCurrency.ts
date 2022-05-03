@@ -103,6 +103,7 @@ export default class CreateCurrency extends BaseCommand {
         type: 'token',
         token: 'erc20',
         derived_from: 'ethereum',
+        contract_address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
         has_mnemonic: 1,
         has_xpub: 1,
         has_address_xpub: 0,
@@ -119,6 +120,7 @@ export default class CreateCurrency extends BaseCommand {
         type: 'token',
         token: 'erc20',
         derived_from: 'ethereum',
+        contract_address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
         has_mnemonic: 1,
         has_xpub: 1,
         has_address_xpub: 0,
@@ -223,13 +225,15 @@ export default class CreateCurrency extends BaseCommand {
       },
     ]
 
-    currencies.map(async (currency) => {
+    await currencies.map(async (currency) => {
       let currencyExists = await Currency.findBy('currency', currency.currency)
 
       if (currencyExists === null) {
-        Currency.create(currency)
+        await Currency.create(currency)
         this.logger.info(`${currency.currency} created.`)
       }
     })
+
+    await this.exit()
   }
 }
