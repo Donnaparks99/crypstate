@@ -106,9 +106,11 @@ export default class TransactionsController {
       })
     }
 
+    let fromAddress: any
+
     if(request.all().fromAddress?.length > 1) {
 
-      let fromAddress: any = await wallet.related('addresses').query().where('address', request.all().fromAddress).first()
+      fromAddress = await wallet.related('addresses').query().where('address', request.all().fromAddress).first()
 
       if(!fromAddress) {
         return response.status(422).json({
@@ -120,6 +122,8 @@ export default class TransactionsController {
       // let addressBalance = await getAddressBalance(currency.token, request.all().fromAddress, currency.contract_address)
       
       // if(parseInt(addressBalance) <= 0)
+    } else {
+      fromAddress = await wallet.related('addresses').query().where('derivation_key', '1').first()
     }
 
     let managerWallet = await managerAccount
@@ -165,16 +169,23 @@ export default class TransactionsController {
 
     }
 
-    let fee:any = await getFee(currency, wallet, request.all().toAddress, request.all().amount)
+    let fee:any = await getFee(
+      currency, 
+      fromAddress.address, 
+      request.all().toAddress, 
+      request.all().amount, 
+      ""
+    )
 
     try {
       let send = await sendCrypto(
         wallet,
         managerWallet,
-        request.all()?.fromAddress,
+        fromAddress.address,
         request.all().toAddress,
         request.all().amount,
         fee,
+        true,
         request.all().memoTag,
         request.all().cutPercentage ?? 0,
         request.all().shouldChargeFee ?? true

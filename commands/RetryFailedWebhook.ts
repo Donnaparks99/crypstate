@@ -34,27 +34,33 @@ export default class RetryFailedWebhook extends BaseCommand {
 
     for(let i = 0; i < failedHook?.length; i++) {
 
-      const wallet: any = await Wallet.query().where('id', failedHook[i].wallet_id).first()
-      const account: any = await wallet?.related('account').query().first()
-      let webhookEndpoint = account?.url + account?.webhook_endpoint
+      if(failedHook[i]) {
+        const wallet: any = await Wallet.query().where('id', failedHook[i].wallet_id).first()
+        const account: any = await wallet?.related('account').query().first()
+        let webhookEndpoint = account?.url + account?.webhook_endpoint
+    
+        try {
+    
+          let sendWebhookRequest = await fetch(webhookEndpoint, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: failedHook[i].request_body,
+          })
+    
+          await FailedWebhookRequest.query().where("id", failedHook[i].id).delete()
   
-      try {
+        } catch (err) {
   
-        let sendWebhookRequest = await fetch(webhookEndpoint, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
-          body: failedHook[i].request_body,
-        })
+          await FailedWebhookRequest.query().where("id", failedHook[i].id).update({"fail_reason": err.message})
   
-        await FailedWebhookRequest.query().where("id", failedHook[i].id).delete()
-
-      } catch (err) {
-
-        await FailedWebhookRequest.query().where("id", failedHook[i].id).update({"fail_reason": err.message})
+        }
 
       }
     }
+
+    this.logger.info('Done')
+    await this.exit()
   }
 }

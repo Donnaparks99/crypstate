@@ -33,6 +33,7 @@
         "moment": "^2.29.3",
         "mysql": "^2.18.1",
         "mysql2": "^2.2.5",
+        "node-cron": "^3.0.0",
         "node-fetch": "^2.6.1",
         "proxy-addr": "^2.0.7",
         "reflect-metadata": "^0.1.13",

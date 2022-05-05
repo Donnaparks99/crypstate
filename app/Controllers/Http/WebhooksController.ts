@@ -15,6 +15,7 @@ import { accountNameExist, currencyExistInDb } from 'App/Services/Validation'
 import FailedWebhookRequest from 'App/Models/FailedWebhookRequest'
 import MasterAddressDeposit from 'App/Models/MasterAddressDeposit'
 import Account from 'App/Models/Account'
+import execa from 'execa'
 
 export default class WebhooksController {
   // public async index({ request, response }: HttpContextContract) {
@@ -89,6 +90,22 @@ export default class WebhooksController {
 
       if(currency.tx_model === 'account' || currency.token === 'trx' || currency.token === 'trc20') {
 
+        // const pendingMasterDeposits:any = await MasterAddressDeposit
+        //   .query()
+        //   .where('fee_deposit_status', 'sent')
+        //   .where('from_address', request.all().address)
+
+
+        //   let depositExists = await pendingMasterDeposits.find((deposit) => deposit?.fee_deposit_amount?.feeInMainCurrency === request.all().amount)
+
+        //   if(depositExists) {
+        //     const { exitCode } = await execa.node('ace', ['send_deposit:to_master'])
+
+        //     return;
+        //   }
+
+
+        /// Check if the received amount is meant for transaction fee
 
         var ticker = await fetch('https://api.binance.com/api/v3/ticker/24hr');
 

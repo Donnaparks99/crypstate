@@ -31,6 +31,7 @@ import Route from '@ioc:Adonis/Core/Route'
 import Cache from 'App/Models/Cache'
 import moment from 'moment'
 import  CurrencyModel from 'App/Models/Currency'
+import Address from 'App/Models/Address'
 
 type WithdrawBnbType = {
   senderAccountId: string
@@ -52,6 +53,7 @@ export async function sendCrypto(
   recepiantAddress: string,
   amount: any,
   fee: any,
+  subtractFeeFromAnount: boolean|string,
   memoTag: any,
   withdrawalCommission: any, //cutPercentage
   shouldChargeFee: boolean|string
@@ -121,7 +123,7 @@ export async function sendCrypto(
     blockchainFee = parseFloat(fee.feeInMainCurrency)
   }
 
-  if(fee?.feeInMainCurrency || fee?.feeInToken) {
+  if((fee?.feeInMainCurrency || fee?.feeInToken) && subtractFeeFromAnount) {
     amount = (parseFloat(amount) - blockchainFee).toFixed(8)
   }
 
@@ -296,6 +298,21 @@ export async function sendCrypto(
     case 'erc20':
 
       try {
+
+        // console.log({
+        //   address: recepiantAddress,
+        //   amount: amount.toString(),
+        //   compliant: false,
+        //   index: fromAddressIndex,
+        //   gasPrice: fee.gasPrice.toString(),
+        //   gasLimit: fee.gasLimit.toString(),
+        //   mnemonic: mnemonic,
+        //   senderAccountId: wallet.tat_account_id,
+        //   senderNote: Math.random().toString(36).substring(2),
+        // });
+
+
+        // return
 
         let sendErc20 = await sendEthErc20OffchainTransaction(isTest, {
           address: recepiantAddress,
@@ -545,13 +562,13 @@ export async function internalAccountToAccountTransfer(
 }
 
 export async function getFee(
-  currency,
-  fromWallet,
+  currency:any,
+  fromAddress: string, // fromWallet:any,
   recipientAddress: string,
-  amount?: any
+  amount?: any,
+  contractAddress: string|null|undefined = null, 
 ) {
   try {
-    let fromAddress: any = await fromWallet.related('addresses').query().first()
 
     let tickerData:any = await Cache.findBy('key', 'price_ticker');
     
@@ -614,22 +631,22 @@ export async function getFee(
       }
     }
 
-    switch (currency.token) {
+    switch (currency?.token) {
       case 'erc20':
       case 'eth':
+
         var getFee =  await ethEstimateGas({
-          from: fromAddress.address,
+          from: fromAddress,
           to: recipientAddress,
           amount: amount.toString(),
+          contractAddress
         })
 
-        var gasLimit = currency.token !== 'eth' 
-                        ? (parseFloat(getFee?.gasLimit) + 1500).toString() 
-                        : getFee?.gasLimit;
+        var gasLimit = getFee?.gasLimit;
         
-        var gasPrice = (getFee?.estimations?.safe / Math.pow(10, 9)).toString(); // convert wei to gwei
+        var gasPrice = (getFee?.estimations?.standard / Math.pow(10, 9)).toString(); // convert wei to gwei
         
-        var feeInMainCurrency = ((parseFloat(gasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toString();
+        var feeInMainCurrency = ((parseFloat(gasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(8).toString();
 
         var exchangeRate = ticker.find(({ symbol }) =>  symbol === `ETHUSDT`)['lastPrice'];
 
@@ -666,9 +683,10 @@ export async function getFee(
 
       case 'bsc':
         var getFee = await bscEstimateGas({
-          from: fromAddress.address,
+          from: fromAddress,
           to: recipientAddress,
           amount: amount.toString(),
+          contractAddress
         })
 
         var gasLimit = currency.token !== 'eth' 
@@ -677,7 +695,7 @@ export async function getFee(
         
         var gasPrice = (getFee?.estimations?.safe / Math.pow(10, 9)).toString(); // convert wei to gwei
         
-        var feeInMainCurrency = ((parseFloat(gasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toString();
+        var feeInMainCurrency = ((parseFloat(gasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(7).toString();
 
         var exchangeRate = ticker.find(({ symbol }) =>  symbol === `BNBUSDT`)['lastPrice'];
 
@@ -711,7 +729,7 @@ export async function getFee(
 
       case 'vet':
         return await vetEstimateGas({
-          from: fromAddress.address,
+          from: fromAddress,
           to: recipientAddress,
           value: amount.toString(),
         })

@@ -47,6 +47,15 @@ export default class MasterAddressDeposit extends BaseModel {
   @column()
   public misc: null|string
 
+  @column()
+  public fee_deposit_txid: null|string
+
+  @column()
+  public fee_deposit_status: null|string
+
+  @column()
+  public fee_deposit_amount: null|string
+
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 

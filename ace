@@ -14,3 +14,22 @@ const { Ignitor } = require('@adonisjs/core/build/standalone')
 new Ignitor(__dirname)
   .ace()
   .handle(process.argv.slice(2))
+
+
+
+var execa = require('execa')
+var cron = require('node-cron');
+
+
+var send_deposit_to_master = cron.schedule('* 5 * * *', async () => {
+  const { exitCode } = await execa.node('ace', ['send_deposit:to_master'])
+  console.log('Send deposit to master address exit code - ' + exitCode);
+});
+send_deposit_to_master.start();
+
+
+var retry_failed_webhook = cron.schedule('* 3 * * *', async () => {
+  const { exitCode } = await execa.node('ace', ['failed:webhook'])
+  console.log('Retry failed webhook exit code - ' + exitCode);
+});
+retry_failed_webhook.start();
