@@ -168,16 +168,19 @@ export default class TransactionsController {
       }
 
     }
-
-    let fee:any = await getFee(
-      currency, 
-      fromAddress.address, 
-      request.all().toAddress, 
-      request.all().amount, 
-      ""
-    )
+    
 
     try {
+
+      let fee:any = await getFee(
+        currency, 
+        fromAddress.address, 
+        request.all().toAddress, 
+        request.all().amount, 
+        wallet, 
+        currency?.contract_address
+      )
+      
       let send = await sendCrypto(
         wallet,
         managerWallet,
@@ -185,7 +188,7 @@ export default class TransactionsController {
         request.all().toAddress,
         request.all().amount,
         fee,
-        true,
+        true, // substract fee from amount
         request.all().memoTag,
         request.all().cutPercentage ?? 0,
         request.all().shouldChargeFee ?? true
@@ -197,12 +200,26 @@ export default class TransactionsController {
       })
     } catch (err) {
 
+      console.log(err);
+
+      // if(err?.response?.status === 400) {
+      //   return response.status(400).json({
+      //     status: 'error',
+      //     data: `${err?.response.data?.message} : ${err?.response.data?.data}`
+      //   })
+      // }
+
       if(err?.response?.data ?? err?.message ?? err) {
         return response.status(401).json({
           status: 'error',
           data: err?.response?.data ?? err?.message ?? err
         })
       }
+
+      return response.status(401).json({
+        status: 'error',
+        data: err
+      })
   
     }
   }

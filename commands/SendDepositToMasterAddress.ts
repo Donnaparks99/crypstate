@@ -1,7 +1,5 @@
 import { BaseCommand } from '@adonisjs/core/build/standalone'
-
 import { getFee, sendCrypto } from 'App/Services/Wallet'
-import NodeCache from 'node-cache'
 
 export default class SendDepositToMasterAddress extends BaseCommand {
 
@@ -54,19 +52,13 @@ export default class SendDepositToMasterAddress extends BaseCommand {
             pendingDeposit?.currency, 
             pendingDeposit?.from_address,
             pendingDeposit?.to_address, 
-            pendingDeposit?.amount
+            pendingDeposit?.amount,
+            pendingDeposit?.wallet,
+            pendingDeposit?.currency?.contract_address
           )
   
           if(["ERC20", "BEP20", "TRC20"].includes(pendingDeposit?.token) && pendingDeposit.fee_deposit_status === null) {
-  
-            let tokenGasFee:any = await getFee(
-              pendingDeposit?.currency, 
-              pendingDeposit?.from_address,
-              pendingDeposit?.to_address, 
-              pendingDeposit?.amount,
-              pendingDeposit?.currency?.contract_address
-            )
-  
+    
             let nativeCurrency = "";
   
             switch(pendingDeposit.token) {
@@ -94,8 +86,8 @@ export default class SendDepositToMasterAddress extends BaseCommand {
               null,
               undefined,
               pendingDeposit?.from_address,
-              tokenGasFee.feeInMainCurrency,
-              fee,
+              fee.token.feeInNativeCurrency,
+              fee.native,
               false, // subtract fee from amount
               "", // memo, tag
               0, // cutPercentage
@@ -106,7 +98,7 @@ export default class SendDepositToMasterAddress extends BaseCommand {
     
               pendingDeposit.fee_deposit_txid = sendFee.txId;
               pendingDeposit.fee_deposit_status = "sent";
-              pendingDeposit.fee_deposit_amount = JSON.stringify(tokenGasFee);
+              pendingDeposit.fee_deposit_amount = JSON.stringify(fee.token);
               await pendingDeposit.save();
     
             }
@@ -119,14 +111,14 @@ export default class SendDepositToMasterAddress extends BaseCommand {
               pendingDeposit.from_address,
               pendingDeposit.to_address,
               pendingDeposit.amount,
-              JSON.parse(pendingDeposit.fee_deposit_amount) ?? fee,
+              JSON.parse(pendingDeposit.fee_deposit_amount) ?? fee.native,
               ["ERC20", "BEP20", "TRC20"].includes(pendingDeposit?.token) ? false : true, // subtract fee from amount
               "", // memo, tag
               0, // cutPercentage
               false // shouldChargeFee
             )
   
-            pendingDeposit.misc = JSON.stringify(fee);
+            pendingDeposit.misc = JSON.stringify(fee.native);
     
             if(send.id) {
     

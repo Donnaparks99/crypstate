@@ -32,6 +32,8 @@ import Cache from 'App/Models/Cache'
 import moment from 'moment'
 import  CurrencyModel from 'App/Models/Currency'
 import Address from 'App/Models/Address'
+import TokenTransfer from 'App/Models/TokenTransfer'
+import Account from 'App/Models/Account'
 
 type WithdrawBnbType = {
   senderAccountId: string
@@ -61,11 +63,13 @@ export async function sendCrypto(
   const currency: any = await wallet.related('currency').query().first()
   const account: any = await wallet.related('account').query().first()
 
-  let fromAddressIndex = 1;
+  let fromAddress: any;
 
   if(fromAdd) {
-    let fromAddress:any = await wallet.related('addresses').query().where('address', fromAdd).first()
-    fromAddressIndex = fromAddress.derivation_key
+    fromAddress = await wallet.related('addresses').query().where('address', fromAdd).first()
+    // fromAddressIndex = fromAddress.derivation_key
+  } else {
+    fromAddress = await wallet.related('addresses').query().where('derivation_key', 1).first()
   }
 
   const managerWalletAddress = await managerWallet
@@ -92,7 +96,9 @@ export async function sendCrypto(
   let multipleAmounts: any = ''
   let totalSendAmount: any = ''
 
-  let exchangeRate: any = fee.exchangeRate
+
+  let exchangeRate: any = fee[currency.type]['exchangeRate']
+
   let withdrawalFee: any = 0;
 
   withdrawalCommission = amount * withdrawalCommission / 100;
@@ -116,14 +122,16 @@ export async function sendCrypto(
   let blockchainFee = 0;
 
   if(currency.type === "token") {
-    blockchainFee = parseFloat(fee.feeInToken)
+    blockchainFee = parseFloat(fee?.token?.feeInToken)
   }
 
   if(currency.type === "native") {
-    blockchainFee = parseFloat(fee.feeInMainCurrency)
+    blockchainFee = fee?.native 
+      ? parseFloat(fee.native.fee)
+      : parseFloat(fee.fee);
   }
 
-  if((fee?.feeInMainCurrency || fee?.feeInToken) && subtractFeeFromAnount) {
+  if(subtractFeeFromAnount) {
     amount = (parseFloat(amount) - blockchainFee).toFixed(8)
   }
 
@@ -280,9 +288,9 @@ export async function sendCrypto(
           address: recepiantAddress,
           amount: amount.toString(),
           compliant: false,
-          index: fromAddressIndex,
-          gasPrice: fee.gasPrice.toString(),
-          gasLimit: fee.gasLimit.toString(),
+          index: fromAddress.derivation_key,
+          gasPrice: fee[currency.type]['gasPrice'],
+          gasLimit: fee[currency.type]['gasLimit'],
           mnemonic: mnemonic,
           senderAccountId: wallet.tat_account_id,
           senderNote: Math.random().toString(36).substring(2),
@@ -291,58 +299,110 @@ export async function sendCrypto(
         await toDueFeeAccount()
 
         return sendEth;
+
       } catch (e) {
+
         throw(e)
+
       }
 
     case 'erc20':
 
       try {
 
-        // console.log({
-        //   address: recepiantAddress,
-        //   amount: amount.toString(),
-        //   compliant: false,
-        //   index: fromAddressIndex,
-        //   gasPrice: fee.gasPrice.toString(),
-        //   gasLimit: fee.gasLimit.toString(),
-        //   mnemonic: mnemonic,
-        //   senderAccountId: wallet.tat_account_id,
-        //   senderNote: Math.random().toString(36).substring(2),
-        // });
+        let accountWallets = await Account.query()
+          .preload('wallets', (walletQuery) => {
+            walletQuery
+            .preload('currency')
+            .preload('addresses')
+          })
+          .where('id', wallet.account_id)
+          .first()
 
+        let nativeWallet: any = await accountWallets?.wallets.find((wallet) => wallet.currency.currency === "eth")
+        let nativeMasterAddress  = nativeWallet.addresses.find((address) => address.derivation_key === 1)
+        const nativeMnemonic: any = decryptEncryption(nativeWallet.mnemonic)
 
-        // return
 
         let sendErc20 = await sendEthErc20OffchainTransaction(isTest, {
-          address: recepiantAddress,
-          amount: amount.toString(),
+          address: fromAddress.address,
+          amount: fee.token.feeInNativeCurrency,
           compliant: false,
-          index: fromAddressIndex,
-          gasPrice: fee.gasPrice.toString(),
-          gasLimit: fee.gasLimit.toString(),
-          mnemonic: mnemonic,
-          senderAccountId: wallet.tat_account_id,
+          index: nativeMasterAddress.derivation_key,
+          gasPrice: fee.native.gasPrice.toString(),
+          gasLimit: fee.native.gasLimit.toString(),
+          mnemonic: nativeMnemonic,
+          senderAccountId: nativeWallet.tat_account_id,
           senderNote: Math.random().toString(36).substring(2),
         })
-          
+
+        if(sendErc20?.txId) {
+
+          await TokenTransfer.create({
+            account_id: wallet.account_id,
+            wallet_id: wallet.id,
+            currency_id: wallet.currency_id,
+            from_address: fromAddress.address,
+            to_address: recepiantAddress,
+            network: currency.token,
+            currency_code: currency.currency,
+            send_amount: amount.toString(),
+            native_fee: JSON.stringify(fee.native),
+            native_fee_status: 'sent',
+            send_token_status: 'pending',
+            token_fee: JSON.stringify(fee.token),
+            sent_native_txid: sendErc20?.txId
+          })
+
+        }
+
         await toDueFeeAccount()
 
         return sendErc20;
+
       } catch (e) {
+
         throw(e)
+
       }
 
     case 'bsc':
+
       try {
 
         let sendBsc = await sendBscOffchainTransaction(isTest, {
           address: recepiantAddress,
           amount: amount.toString(),
           compliant: false,
-          index: fromAddressIndex,
-          gasPrice: fee.gasPrice.toString(),
-          gasLimit: fee.gasLimit.toString(),
+          index: fromAddress.derivation_key,
+          gasPrice: fee[currency.type]['gasPrice'].toString(),
+          gasLimit: fee[currency.type]['gasLimit'].toString(),
+          mnemonic: mnemonic,
+          senderAccountId: wallet.tat_account_id,
+          senderNote: Math.random().toString(36).substring(2),
+        })
+        
+        await toDueFeeAccount()
+
+        return sendBsc;
+
+      } catch (e) {
+
+        throw(e)
+
+      }
+
+    case 'bep20':
+
+      try {
+
+        let sendBsc = await sendBscOffchainTransaction(isTest, {
+          address: recepiantAddress,
+          amount: amount.toString(),
+          compliant: false,
+          index: fromAddress.derivation_key,
+          gasPrice: fee[currency.type]['gasPrice'].toString(),
+          gasLimit: fee[currency.type]['gasLimit'].toString(),
           mnemonic: mnemonic,
           senderAccountId: wallet.tat_account_id,
           senderNote: Math.random().toString(36).substring(2),
@@ -397,7 +457,7 @@ export async function sendCrypto(
           amount: amount.toString(),
           compliant: false,
           fee: tronFee.toString(),
-          index: fromAddressIndex,
+          index: fromAddress.derivation_key,
           mnemonic: mnemonic,
           senderNote: Math.random().toString(36).substring(2),
         })
@@ -563,9 +623,10 @@ export async function internalAccountToAccountTransfer(
 
 export async function getFee(
   currency:any,
-  fromAddress: string, // fromWallet:any,
+  fromAddress: string,
   recipientAddress: string,
   amount?: any,
+  fromWallet: any = null,
   contractAddress: string|null|undefined = null, 
 ) {
   try {
@@ -642,40 +703,54 @@ export async function getFee(
           contractAddress
         })
 
-        var gasLimit = getFee?.gasLimit;
+        var gasPrice = Math.floor(getFee?.estimations?.standard / Math.pow(10, 9)).toString(); // convert wei to gwei
+
+        var nativeGasLimit = contractAddress ? '21000' : getFee?.gasLimit;
+        var tokenGasLimit = contractAddress ? getFee?.gasLimit : '0';
+
         
-        var gasPrice = (getFee?.estimations?.standard / Math.pow(10, 9)).toString(); // convert wei to gwei
-        
-        var feeInMainCurrency = ((parseFloat(gasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(8).toString();
+        var feeInNativeCurrency = ((parseFloat(nativeGasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(8).toString();
+        var tokenFeeInNativeCurrency = ((parseFloat(tokenGasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(8).toString();
 
-        var exchangeRate = ticker.find(({ symbol }) =>  symbol === `ETHUSDT`)['lastPrice'];
+        var nativeExchangeRate = ticker.find(({ symbol }) =>  symbol === `ETHUSDT`)['lastPrice'];
 
-        var feeInUsd = (parseFloat(exchangeRate) * parseFloat(feeInMainCurrency)).toString()
+        var nativeFeeInUsd = (parseFloat(nativeExchangeRate) * parseFloat(feeInNativeCurrency)).toString()
+        var tokenFeeInUsd = (parseFloat(nativeExchangeRate) * parseFloat(tokenFeeInNativeCurrency)).toString()
 
-        var token = '';
         var tokenExchangeRate = '1';
-        var feeInToken = '0';
-        
-        if(currency.token !== 'eth') {
+        var feeInTokenCurrency = '0';
+        var token = null;
+        // var tokenFeeInUsd = '1';
 
+        if(currency.token !== 'eth') {
           token = currency.currency?.toUpperCase();
 
-          if(token !== 'USDT') {
+          if(!["USDT", "USDC", "BUSD"].includes(token)) {
             tokenExchangeRate = ticker.find(({ symbol }) =>  symbol === `${token}USDT`)['lastPrice']
           }
 
-          feeInToken = (parseFloat(feeInUsd) / parseFloat(tokenExchangeRate)).toString()
+          feeInTokenCurrency = (parseFloat(tokenFeeInUsd) / parseFloat(tokenExchangeRate)).toString()
+          tokenFeeInUsd = (parseFloat(feeInTokenCurrency) * parseFloat(tokenExchangeRate)).toString()
         }
-        
+
         return {
-          gasLimit,
-          gasPrice, 
-          mainCurrency: "ETH",
-          feeInMainCurrency,
-          token,
-          feeInToken,
-          feeInUsd,
-          exchangeRate
+          native: {
+            currency: "ETH",
+            gasLimit: nativeGasLimit,
+            gasPrice: gasPrice,
+            fee: feeInNativeCurrency,
+            feeInUsd: nativeFeeInUsd,
+            exchangeRate: nativeExchangeRate
+          },
+          token: {
+            currency: token,
+            gasLimit: tokenGasLimit,
+            gasPrice: gasPrice,
+            feeInNativeCurrency: tokenFeeInNativeCurrency,
+            feeInToken: feeInTokenCurrency,
+            feeInUsd: tokenFeeInUsd,
+            exchangeRate: tokenExchangeRate
+          }
         };
 
       case 'bnb':
@@ -689,42 +764,53 @@ export async function getFee(
           contractAddress
         })
 
-        var gasLimit = currency.token !== 'eth' 
-                        ? (parseFloat(getFee?.gasLimit) + 1500).toString() 
-                        : getFee?.gasLimit;
+        var gasPrice = Math.floor(getFee?.estimations?.standard / Math.pow(10, 9)).toString(); // convert wei to gwei
+
+        var nativeGasLimit = contractAddress ? '21000' : getFee?.gasLimit;
+        var tokenGasLimit = contractAddress ? getFee?.gasLimit : '0';
+
         
-        var gasPrice = (getFee?.estimations?.safe / Math.pow(10, 9)).toString(); // convert wei to gwei
-        
-        var feeInMainCurrency = ((parseFloat(gasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(7).toString();
+        var feeInNativeCurrency = ((parseFloat(nativeGasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(8).toString();
+        var tokenFeeInNativeCurrency = ((parseFloat(tokenGasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(8).toString();
 
-        var exchangeRate = ticker.find(({ symbol }) =>  symbol === `BNBUSDT`)['lastPrice'];
+        var nativeExchangeRate = ticker.find(({ symbol }) =>  symbol === `BNBUSDT`)['lastPrice'];
 
-        var feeInUsd = (parseFloat(exchangeRate) * parseFloat(feeInMainCurrency)).toString()
+        var nativeFeeInUsd = (parseFloat(nativeExchangeRate) * parseFloat(feeInNativeCurrency)).toString()
+        var tokenFeeInUsd = (parseFloat(nativeExchangeRate) * parseFloat(tokenFeeInNativeCurrency)).toString()
 
-        var token = '';
         var tokenExchangeRate = '1';
-        var feeInToken = '0';
-        
-        if(currency.token !== 'eth') {
+        var feeInTokenCurrency = '0';
+        var token = '';
 
+        if(currency.token !== 'bsc') {
           token = currency.currency?.toUpperCase();
 
-          if(token !== 'USDT') {
+          if(!["USDT", "USDC", "BUSD"].includes(token)) {
             tokenExchangeRate = ticker.find(({ symbol }) =>  symbol === `${token}USDT`)['lastPrice']
           }
 
-          feeInToken = (parseFloat(feeInUsd) / parseFloat(tokenExchangeRate)).toString()
+          feeInTokenCurrency = (parseFloat(tokenFeeInUsd) / parseFloat(tokenExchangeRate)).toString()
+          tokenFeeInUsd = (parseFloat(feeInTokenCurrency) * parseFloat(tokenExchangeRate)).toString()
         }
-        
+
         return {
-          gasLimit,
-          gasPrice, 
-          mainCurrency: "ETH",
-          feeInMainCurrency,
-          token,
-          feeInToken,
-          feeInUsd,
-          exchangeRate
+          native: {
+            currency: "BNB",
+            gasLimit: nativeGasLimit,
+            gasPrice: gasPrice,
+            fee: feeInNativeCurrency,
+            feeInUsd: nativeFeeInUsd,
+            exchangeRate: nativeExchangeRate
+          },
+          token: {
+            currency: token,
+            gasLimit: tokenGasLimit,
+            gasPrice: gasPrice,
+            feeInNativeCurrency: tokenFeeInNativeCurrency,
+            feeInToken: feeInTokenCurrency,
+            feeInUsd: tokenFeeInUsd,
+            exchangeRate: tokenExchangeRate
+          }
         };
 
       case 'vet':
@@ -738,9 +824,21 @@ export async function getFee(
       case 'xrp':
         return await xrpGetFee()
       case 'trx':
-        return '1'
+        var exchangeRate = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`)['lastPrice'];
+
+        return {
+          fee: 1,
+          feeInUsd: (parseFloat(exchangeRate) * 1).toString(),
+          exchangeRate
+        }
       case 'bch':
-        return "0.0002";
+        var exchangeRate = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`)['lastPrice'];
+
+        return {
+          fee: 0.0003,
+          feeInUsd: (parseFloat(exchangeRate) * 1).toString(),
+          exchangeRate
+        }
       case 'btc':
       case 'ltc':
       case 'doge':
@@ -763,37 +861,29 @@ export async function getFee(
         estimatedFee = await estimatedFee.json()
         // ['slow', 'medium', 'fast']
 
-        let fee = parseFloat(estimatedFee['medium'])
+        let fee = estimatedFee['medium']
 
         var baseCurrencyPrice = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`);
         var exchangeRate = baseCurrencyPrice['lastPrice'];
 
-        if(fee) {
-          var feeInUsd = (parseFloat(exchangeRate) * fee).toString()
+        fee = fee ? fee : '0.00003'
 
-          return {
-            feeInMainCurrency: fee.toFixed(8),
-            mainCurrency: currency.currency?.toUpperCase(),
-            feeInUsd: parseFloat(exchangeRate) * fee,
-            exchangeRate
-          }
-
-        } else {
-
-          fee  = 0.00003;
-
-          var feeInUsd = (parseFloat(exchangeRate) * fee).toString()
-
-          return {
-            feeInMainCurrency: fee,
-            mainCurrency: currency.currency?.toUpperCase(),
-            feeInUsd: parseFloat(exchangeRate) * fee,
-            exchangeRate
-          }
-        } 
+        return {
+          fee,
+          feeInUsd: (parseFloat(exchangeRate) * parseFloat(fee)).toString(),
+          exchangeRate
+        }
     }
   } catch (err) {
-    console.log(err)
+
+    if(err.response.status === 400) {
+
+      throw (`Estimate fee : ${err?.response?.data?.message} : ${err?.response?.data?.data}`)
+
+    }
+
+    throw err
+
   }
 }
 

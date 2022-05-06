@@ -60,6 +60,18 @@
       "aliases": [],
       "flags": []
     },
+    "transfer:token": {
+      "settings": {
+        "loadApp": true,
+        "stayAlive": true
+      },
+      "commandPath": "./commands/TransferToken",
+      "commandName": "transfer:token",
+      "description": "Transfer tokens that has native currency to pay for fees",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
     "dump:rcfile": {
       "settings": {},
       "commandPath": "@adonisjs/core/commands/DumpRc",
