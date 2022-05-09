@@ -186,7 +186,7 @@ export default class TransactionsController {
         managerWallet,
         fromAddress.address,
         request.all().toAddress,
-        request.all().amount,
+        parseFloat(request.all().amount),
         fee,
         true, // substract fee from amount
         request.all().memoTag,
