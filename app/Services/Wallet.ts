@@ -143,14 +143,14 @@ export async function sendCrypto(
       let newSendAmount = parseFloat(amount) + parseFloat(withdrawalFee);
       
       receivingAddress = recepiantAddress
-      multipleAmounts = [newSendAmount.toFixed(7).toString()]
-      totalSendAmount = newSendAmount.toFixed(7).toString()
+      multipleAmounts = [newSendAmount.toString()]
+      totalSendAmount = newSendAmount.toString()
 
     } else {
 
       receivingAddress = recepiantAddress + ',' + managerAddress
       multipleAmounts = [
-        amount.toFixed(7).toString(), 
+        amount.toString(), 
         withdrawalFee.toFixed(7).toString()
       ]
       totalSendAmount = (parseFloat(amount) + parseFloat(withdrawalFee)).toFixed(7).toString()
@@ -158,8 +158,8 @@ export async function sendCrypto(
 
   } else {
     receivingAddress = recepiantAddress
-    multipleAmounts = [amount.toFixed(7).toString()]
-    totalSendAmount = amount.toFixed(7).toString()
+    multipleAmounts = [amount.toString()]
+    totalSendAmount = amount.toString()
   }
 
   async function toDueFeeAccount() {
@@ -216,6 +216,20 @@ export async function sendCrypto(
   switch (currency.token) {
 
     case 'btc':
+
+    // console.log({
+    //   senderAccountId: wallet.tat_account_id,
+    //   address: receivingAddress,
+    //   amount: totalSendAmount,
+    //   compliant: false,
+    //   fee: blockchainFee.toString(),
+    //   multipleAmounts: multipleAmounts,
+    //   mnemonic: mnemonic,
+    //   xpub: xpub,
+    //   senderNote: Math.random().toString(36).substring(2),
+    // });
+
+    // return ;
 
       var tx = await sendBitcoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
