@@ -217,19 +217,19 @@ export async function sendCrypto(
 
     case 'btc':
 
-    console.log({
-      senderAccountId: wallet.tat_account_id,
-      address: receivingAddress,
-      amount: totalSendAmount,
-      compliant: false,
-      fee: blockchainFee.toString(),
-      multipleAmounts: multipleAmounts,
-      mnemonic: mnemonic,
-      xpub: xpub,
-      senderNote: Math.random().toString(36).substring(2),
-    });
+    // console.log({
+    //   senderAccountId: wallet.tat_account_id,
+    //   address: receivingAddress,
+    //   amount: totalSendAmount,
+    //   compliant: false,
+    //   fee: blockchainFee.toString(),
+    //   multipleAmounts: multipleAmounts,
+    //   mnemonic: mnemonic,
+    //   xpub: xpub,
+    //   senderNote: Math.random().toString(36).substring(2),
+    // });
 
-    return ;
+    // return ;
 
       var tx = await sendBitcoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
