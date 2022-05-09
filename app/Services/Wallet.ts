@@ -126,13 +126,12 @@ export async function sendCrypto(
   }
 
   if(currency.type === "native") {
-    blockchainFee = fee?.native 
-      ? parseFloat(fee.native.fee)
-      : parseFloat(fee.fee);
+    blockchainFee = parseFloat(fee.native.fee)
+    
   }
 
   if(subtractFeeFromAnount) {
-    amount = (parseFloat(amount) - blockchainFee).toFixed(8)
+    amount = (parseFloat(amount) - blockchainFee).toFixed(7)
   }
 
   if( 
@@ -144,23 +143,23 @@ export async function sendCrypto(
       let newSendAmount = parseFloat(amount) + parseFloat(withdrawalFee);
       
       receivingAddress = recepiantAddress
-      multipleAmounts = [newSendAmount.toString()]
-      totalSendAmount = newSendAmount.toString()
+      multipleAmounts = [newSendAmount.toFixed(7).toString()]
+      totalSendAmount = newSendAmount.toFixed(7).toString()
 
     } else {
 
       receivingAddress = recepiantAddress + ',' + managerAddress
       multipleAmounts = [
-        amount.toString(), 
-        withdrawalFee.toString()
+        amount.toFixed(7).toString(), 
+        withdrawalFee.toFixed(7).toString()
       ]
-      totalSendAmount = (parseFloat(amount) + parseFloat(withdrawalFee)).toFixed(8).toString()
+      totalSendAmount = (parseFloat(amount) + parseFloat(withdrawalFee)).toFixed(7).toString()
     }
 
   } else {
     receivingAddress = recepiantAddress
-    multipleAmounts = [amount.toString()]
-    totalSendAmount = amount.toString()
+    multipleAmounts = [amount.toFixed(7).toString()]
+    totalSendAmount = amount.toFixed(7).toString()
   }
 
   async function toDueFeeAccount() {
@@ -861,7 +860,7 @@ export async function getFee(
         estimatedFee = await estimatedFee.json()
         // ['slow', 'medium', 'fast']
 
-        let fee = estimatedFee['medium']
+        let fee = parseFloat(estimatedFee['medium']).toFixed(7)
 
         var baseCurrencyPrice = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`);
         var exchangeRate = baseCurrencyPrice['lastPrice'];
@@ -869,9 +868,11 @@ export async function getFee(
         fee = fee ? fee : '0.00003'
 
         return {
-          fee,
-          feeInUsd: (parseFloat(exchangeRate) * parseFloat(fee)).toString(),
-          exchangeRate
+          native: {
+            fee,
+            feeInUsd: (parseFloat(exchangeRate) * parseFloat(fee)).toString(),
+            exchangeRate
+          }
         }
     }
   } catch (err) {
