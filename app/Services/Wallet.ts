@@ -99,6 +99,21 @@ export async function sendCrypto(
 
   let exchangeRate: any = fee[currency.type]['exchangeRate']
 
+  let blockchainFee = 0;
+
+  if(currency.type === "token") {
+    blockchainFee = parseFloat(fee?.token?.feeInToken)
+  }
+
+  if(currency.type === "native") {
+    blockchainFee = parseFloat(fee.native.fee)
+    
+  }
+
+  if(subtractFeeFromAnount) {
+    amount = (parseFloat(amount) - blockchainFee).toFixed(7)
+  }
+
   let withdrawalFee: any = 0;
 
   withdrawalCommission = amount * withdrawalCommission / 100;
@@ -117,21 +132,6 @@ export async function sendCrypto(
       
     }
 
-  }
-
-  let blockchainFee = 0;
-
-  if(currency.type === "token") {
-    blockchainFee = parseFloat(fee?.token?.feeInToken)
-  }
-
-  if(currency.type === "native") {
-    blockchainFee = parseFloat(fee.native.fee)
-    
-  }
-
-  if(subtractFeeFromAnount) {
-    amount = (parseFloat(amount) - blockchainFee).toFixed(7)
   }
 
   if( 
@@ -216,20 +216,6 @@ export async function sendCrypto(
   switch (currency.token) {
 
     case 'btc':
-
-    // console.log({
-    //   senderAccountId: wallet.tat_account_id,
-    //   address: receivingAddress,
-    //   amount: totalSendAmount,
-    //   compliant: false,
-    //   fee: blockchainFee.toString(),
-    //   multipleAmounts: multipleAmounts,
-    //   mnemonic: mnemonic,
-    //   xpub: xpub,
-    //   senderNote: Math.random().toString(36).substring(2),
-    // });
-
-    // return ;
 
       var tx = await sendBitcoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
