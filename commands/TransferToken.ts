@@ -61,9 +61,6 @@ export default class TransferToken extends BaseCommand {
 
           let fee =  JSON.parse(pendingTransfer.token_fee)
 
-          console.log(pendingTransfer.send_amount);
-          return
-
           let sendToken = await sendEthErc20OffchainTransaction(isTest, {
             address: pendingTransfer.to_address,
             amount: pendingTransfer.send_amount,
