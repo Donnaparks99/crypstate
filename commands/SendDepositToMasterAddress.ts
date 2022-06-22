@@ -87,7 +87,7 @@ export default class SendDepositToMasterAddress extends BaseCommand {
               undefined,
               pendingDeposit?.from_address,
               fee.token.feeInNativeCurrency,
-              fee.native,
+              fee,
               false, // subtract fee from amount
               "", // memo, tag
               0, // cutPercentage
@@ -111,7 +111,7 @@ export default class SendDepositToMasterAddress extends BaseCommand {
               pendingDeposit.from_address,
               pendingDeposit.to_address,
               pendingDeposit.amount,
-              JSON.parse(pendingDeposit.fee_deposit_amount) ?? fee.native,
+              JSON.parse(pendingDeposit.fee_deposit_amount) ?? fee,
               ["ERC20", "BEP20", "TRC20"].includes(pendingDeposit?.token) ? false : true, // subtract fee from amount
               "", // memo, tag
               0, // cutPercentage

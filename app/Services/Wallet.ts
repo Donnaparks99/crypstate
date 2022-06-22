@@ -65,6 +65,7 @@ export async function sendCrypto(
 
   let fromAddress: any;
 
+
   if(fromAdd) {
     fromAddress = await wallet.related('addresses').query().where('address', fromAdd).first()
     // fromAddressIndex = fromAddress.derivation_key
@@ -97,7 +98,7 @@ export async function sendCrypto(
   let totalSendAmount: any = ''
 
 
-  let exchangeRate: any = fee[currency.type]['exchangeRate']
+  let exchangeRate: any = fee?.[currency.type]?.['exchangeRate'] ?? fee.exchangeRate
 
   let blockchainFee = 0;
 
@@ -129,7 +130,8 @@ export async function sendCrypto(
       
       withdrawalFee = ((amount * (account.withdrawal_fee / 100)) + parseFloat(withdrawalCommission)).toFixed(8)
       amount = amount - withdrawalFee
-      
+
+      amount = Math.floor(amount * Math.pow(10, 8)) / Math.pow(10, 8)
     }
 
   }
@@ -153,8 +155,10 @@ export async function sendCrypto(
         amount.toString(), 
         withdrawalFee.toString()
       ]
-      totalSendAmount = (parseFloat(amount) + parseFloat(withdrawalFee)).toFixed(7).toString()
+      totalSendAmount = (parseFloat(amount) + parseFloat(withdrawalFee))
     }
+
+    totalSendAmount = (Math.floor(totalSendAmount * Math.pow(10, 8)) / Math.pow(10, 8)).toString()
 
   } else {
     receivingAddress = recepiantAddress
@@ -321,15 +325,15 @@ export async function sendCrypto(
         let nativeWallet: any = await accountWallets?.wallets.find((wallet) => wallet.currency.currency === "eth")
         let nativeMasterAddress  = nativeWallet.addresses.find((address) => address.derivation_key === 1)
         const nativeMnemonic: any = decryptEncryption(nativeWallet.mnemonic)
-
+        
 
         let sendErc20 = await sendEthErc20OffchainTransaction(isTest, {
           address: fromAddress.address,
-          amount: fee.token.feeInNativeCurrency,
+          amount: fee.token?.feeInNativeCurrency ?? fee?.feeInNativeCurrency,
           compliant: false,
           index: nativeMasterAddress.derivation_key,
-          gasPrice: fee.native.gasPrice.toString(),
-          gasLimit: fee.native.gasLimit.toString(),
+          gasPrice: fee.native?.gasPrice?.toString() ?? fee.gasPrice,
+          gasLimit: fee.native?.gasLimit?.toString() ?? fee.gasLimit,
           mnemonic: nativeMnemonic,
           senderAccountId: nativeWallet.tat_account_id,
           senderNote: Math.random().toString(36).substring(2),
@@ -349,7 +353,7 @@ export async function sendCrypto(
             native_fee: JSON.stringify(fee.native),
             native_fee_status: 'sent',
             send_token_status: 'pending',
-            token_fee: JSON.stringify(fee.token),
+            token_fee: JSON.stringify(fee.token ?? fee),
             sent_native_txid: sendErc20?.txId
           })
 
@@ -701,7 +705,7 @@ export async function getFee(
           amount: amount.toString(),
           contractAddress
         })
-
+        
         var gasPrice = Math.floor(getFee?.estimations?.standard / Math.pow(10, 9)).toString(); // convert wei to gwei
 
         var nativeGasLimit = contractAddress ? '21000' : getFee?.gasLimit;
@@ -877,7 +881,7 @@ export async function getFee(
     }
   } catch (err) {
 
-    if(err.response.status === 400) {
+    if(err?.response?.status === 400) {
 
       throw (`Estimate fee : ${err?.response?.data?.message} : ${err?.response?.data?.data}`)
 

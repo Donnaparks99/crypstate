@@ -3,6 +3,7 @@ import { sendEthErc20OffchainTransaction } from '@tatumio/tatum'
 import { getFee, sendCrypto } from 'App/Services/Wallet'
 import Env from '@ioc:Adonis/Core/Env'
 import Encryption from '@ioc:Adonis/Core/Encryption'
+import Address from 'App/Models/Address'
 
 export default class TransferToken extends BaseCommand {
 
@@ -56,15 +57,20 @@ export default class TransferToken extends BaseCommand {
             secret: Env.get(`CRYPTO_KEY`),
           }).decrypt(pendingTransfer.wallet.mnemonic.toString())
 
+          let address = await Address.query().where("address", pendingTransfer.from_address).first();
+
           let fee =  JSON.parse(pendingTransfer.token_fee)
+
+          console.log(pendingTransfer.send_amount);
+          return
 
           let sendToken = await sendEthErc20OffchainTransaction(isTest, {
             address: pendingTransfer.to_address,
             amount: pendingTransfer.send_amount,
             compliant: false,
-            index: 1,
-            gasPrice: fee.gasPrice.toString(),
-            gasLimit: fee.gasLimit.toString(),
+            index: address.derivation_key,
+            gasPrice: fee.gasPrice,
+            gasLimit: fee.gasLimit,
             mnemonic: mnemonic,
             senderAccountId: pendingTransfer.wallet.tat_account_id,
             senderNote: Math.random().toString(36).substring(2),

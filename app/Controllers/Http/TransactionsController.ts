@@ -169,7 +169,6 @@ export default class TransactionsController {
 
     }
     
-
     try {
 
       let fee:any = await getFee(
