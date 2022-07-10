@@ -133,7 +133,7 @@ export default class WebhooksController {
               "currency_code": currency.currency.toUpperCase(),
               "token": currency.token.toUpperCase(),
               "amount": request.all().amount,
-              "from_address": request.all().address,
+              "from_address": request.all().to, 
               "to_address": masterAddress.address,
               "status": "pending",
               "deposit_txid": request.all().txId,
