@@ -179,6 +179,10 @@ export default class TransactionsController {
         wallet, 
         currency?.contract_address
       )
+
+      console.log(fee);
+
+      return ;
       
       let send = await sendCrypto(
         wallet,

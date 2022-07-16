@@ -91,7 +91,6 @@ export async function sendCrypto(
   const mnemonic: any = decryptEncryption(wallet.mnemonic)
   const xpub: any = decryptEncryption(wallet.xpub)
   const secret: any = decryptEncryption(wallet.secret)
-
   
   let receivingAddress: any = ''
   let multipleAmounts: any = ''
@@ -325,7 +324,6 @@ export async function sendCrypto(
         let nativeWallet: any = await accountWallets?.wallets.find((wallet) => wallet.currency.currency === "eth")
         let nativeMasterAddress  = nativeWallet.addresses.find((address) => address.derivation_key === 1)
         const nativeMnemonic: any = decryptEncryption(nativeWallet.mnemonic)
-        
 
         let sendErc20 = await sendEthErc20OffchainTransaction(isTest, {
           address: fromAddress.address,
@@ -756,8 +754,8 @@ export async function getFee(
           }
         };
 
-      case 'bnb':
-        return '0.000075'
+      // case 'bnb':
+      //   return '0.000075'
 
       case 'bsc':
         var getFee = await bscEstimateGas({
@@ -767,7 +765,7 @@ export async function getFee(
           contractAddress
         })
 
-        var gasPrice = Math.floor(getFee?.estimations?.standard / Math.pow(10, 9)).toString(); // convert wei to gwei
+        var gasPrice = Math.floor(getFee?.gasPrice / Math.pow(10, 9)).toString(); // convert wei to gwei
 
         var nativeGasLimit = contractAddress ? '21000' : getFee?.gasLimit;
         var tokenGasLimit = contractAddress ? getFee?.gasLimit : '0';

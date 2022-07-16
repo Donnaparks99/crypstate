@@ -120,19 +120,17 @@ export default class SendDepositToMasterAddress extends BaseCommand {
   
             pendingDeposit.misc = JSON.stringify(fee.native);
     
-            if(send.id) {
+            if(send?.id) {
     
               pendingDeposit.status = "sent";
               pendingDeposit.withdrawal_txid = send.txId;
               await pendingDeposit.save();
     
             }
-    
+
           }
   
         } catch (err) {
-  
-          console.log(err);
   
           if(err?.response?.status === 403) {
             pendingDeposit.fail_reason = err?.response?.data?.message;
