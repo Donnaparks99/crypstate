@@ -124,7 +124,7 @@ export default class WebhooksController {
 
         let txExists = await MasterAddressDeposit.query().where('deposit_txid', request.all().txId).first()
 
-        if((amountUsd >= 4) && (request.all().address !== masterAddress) && !txExists) {
+        if((amountUsd >= 4) && (request.all().to !== masterAddress) && !txExists) {
 
             var newTx = await MasterAddressDeposit.create({
               "account_id": account.id,
