@@ -868,6 +868,8 @@ export async function getFee(
         var exchangeRate = baseCurrencyPrice['lastPrice'];
 
         fee = fee ? fee : '0.00003'
+        
+        fee = parseFloat(fee) <= 0.00001 ? 0.000012 : fee
 
         return {
           native: {
