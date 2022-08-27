@@ -869,7 +869,7 @@ export async function getFee(
 
         fee = fee ? fee : '0.00003'
         
-        fee = parseFloat(fee) <= 0.00001 ? 0.000012 : fee
+        fee = parseFloat(fee) <= 0.00001 ? 0.00002 : fee
 
         return {
           native: {
