@@ -96,7 +96,6 @@ export async function sendCrypto(
   let multipleAmounts: any = ''
   let totalSendAmount: any = ''
 
-
   let exchangeRate: any = fee?.[currency.type]?.['exchangeRate'] ?? fee.exchangeRate
 
   let blockchainFee = 0;
@@ -139,6 +138,7 @@ export async function sendCrypto(
     withdrawalFee > 0 && 
     managerAddress) 
   {
+
     if((exchangeRate * amount) <= parseFloat(Env.get('FEE_FROM_AMOUNT_ABOVE'))) {
 
       let newSendAmount = (parseFloat(amount) + parseFloat(withdrawalFee)).toFixed(7);
@@ -155,9 +155,8 @@ export async function sendCrypto(
         withdrawalFee.toString()
       ]
       totalSendAmount = (parseFloat(amount) + parseFloat(withdrawalFee))
+      totalSendAmount = (Math.floor(totalSendAmount * Math.pow(10, 8)) / Math.pow(10, 8)).toString()
     }
-
-    totalSendAmount = (Math.floor(totalSendAmount * Math.pow(10, 8)) / Math.pow(10, 8)).toString()
 
   } else {
     receivingAddress = recepiantAddress
