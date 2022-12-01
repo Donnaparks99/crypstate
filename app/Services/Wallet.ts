@@ -631,70 +631,70 @@ export async function getFee(
 ) {
   try {
 
-    let tickerData:any = await Cache.findBy('key', 'price_ticker');
+    // let tickerData:any = await Cache.findBy('key', 'price_ticker');
     
-    let ticker: any;
+    // let ticker: any;
 
-    if(!tickerData || moment().isAfter(moment(new Date(tickerData?.updatedAt)).add(6, 'minutes'))) {
-      var newPriceTicker = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    // if(!tickerData || moment().isAfter(moment(new Date(tickerData?.updatedAt)).add(6, 'minutes'))) {
+    //   var newPriceTicker = await fetch('https://api.binance.com/api/v3/ticker/24hr');
 
-      ticker = await newPriceTicker.json()
+    //   ticker = await newPriceTicker.json()
 
-      console.log(ticker);
+    //   console.log(ticker);
 
-      let currenciesModel = await CurrencyModel.query().select(['currency']);
+    //   let currenciesModel = await CurrencyModel.query().select(['currency']);
 
-      let currencyPairs = await currenciesModel.reduce(function (p, c) {
+    //   let currencyPairs = await currenciesModel.reduce(function (p, c) {
 
-        if(!["USDT", "USDC", "BUSD"].includes(c.currency)) {
+    //     if(!["USDT", "USDC", "BUSD"].includes(c.currency)) {
 
-          return [
-            ...p,
-            `${c.currency?.toUpperCase()}USDT`,
-            `${c.currency?.toUpperCase()}BUSD`
-          ]
+    //       return [
+    //         ...p,
+    //         `${c.currency?.toUpperCase()}USDT`,
+    //         `${c.currency?.toUpperCase()}BUSD`
+    //       ]
 
-        }
+    //     }
 
-        return p
+    //     return p
 
-      }, [])
+    //   }, [])
 
-      console.log(ticker);
+    //   console.log(ticker);
 
-      ticker = ticker?.reduce(function (p, c) {
+    //   ticker = ticker?.reduce(function (p, c) {
 
-        if(currencyPairs.includes(c.symbol)) {
-          return [
-            ...p, 
-            {
-              symbol: c.symbol,
-              lastPrice: c.lastPrice
-            }
-          ]
-        }
+    //     if(currencyPairs.includes(c.symbol)) {
+    //       return [
+    //         ...p, 
+    //         {
+    //           symbol: c.symbol,
+    //           lastPrice: c.lastPrice
+    //         }
+    //       ]
+    //     }
 
-        return p
-      }, [])
-    }
+    //     return p
+    //   }, [])
+    // }
 
-    if(!tickerData) {
-      await Cache.create({
-        'key': 'price_ticker',
-        'value': JSON.stringify(ticker)
-      })
-    } else {
-      if(moment().isAfter(moment(new Date(tickerData?.updatedAt)).add(6, 'minutes'))) {
+    // if(!tickerData) {
+    //   await Cache.create({
+    //     'key': 'price_ticker',
+    //     'value': JSON.stringify(ticker)
+    //   })
+    // } else {
+    //   if(moment().isAfter(moment(new Date(tickerData?.updatedAt)).add(6, 'minutes'))) {
     
-        tickerData.value = JSON.stringify(ticker);
-        tickerData.save();
+    //     tickerData.value = JSON.stringify(ticker);
+    //     tickerData.save();
       
-      } else {
+    //   } else {
   
-        ticker = JSON.parse(tickerData?.value)
+    //     ticker = JSON.parse(tickerData?.value)
       
-      }
-    }
+    //   }
+    // }
 
     switch (currency?.token) {
       case 'erc20':
@@ -716,21 +716,24 @@ export async function getFee(
         var feeInNativeCurrency = ((parseFloat(nativeGasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(8).toString();
         var tokenFeeInNativeCurrency = ((parseFloat(tokenGasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(8).toString();
 
-        var nativeExchangeRate = ticker.find(({ symbol }) =>  symbol === `ETHUSDT`)['lastPrice'];
+        // var nativeExchangeRate = ticker.find(({ symbol }) =>  symbol === `ETHUSDT`)['lastPrice'];
+        var nativeExchangeRate = await getExchangeRate(Currency['ETH'], Fiat['USD'])
 
-        var nativeFeeInUsd = (parseFloat(nativeExchangeRate) * parseFloat(feeInNativeCurrency)).toString()
-        var tokenFeeInUsd = (parseFloat(nativeExchangeRate) * parseFloat(tokenFeeInNativeCurrency)).toString()
+        var nativeFeeInUsd = (parseFloat(nativeExchangeRate?.value) * parseFloat(feeInNativeCurrency)).toString()
+        var tokenFeeInUsd = (parseFloat(nativeExchangeRate?.value) * parseFloat(tokenFeeInNativeCurrency)).toString()
 
-        var tokenExchangeRate = '1';
+        var tokenExchangeRate: any = '1';
         var feeInTokenCurrency = '0';
-        var token = null;
+        var token: any = null;
         // var tokenFeeInUsd = '1';
 
         if(currency.token !== 'eth') {
           token = currency.currency?.toUpperCase();
 
           if(!["USDT", "USDC", "BUSD"].includes(token)) {
-            tokenExchangeRate = ticker.find(({ symbol }) =>  symbol === `${token}USDT`)['lastPrice']
+            // tokenExchangeRate = ticker.find(({ symbol }) =>  symbol === `${token}USDT`)['lastPrice']
+            tokenExchangeRate = await getExchangeRate(Currency[token.toUpperCase()], Fiat['USD'])
+            tokenExchangeRate = tokenExchangeRate?.value
           }
 
           feeInTokenCurrency = (parseFloat(tokenFeeInUsd) / parseFloat(tokenExchangeRate)).toString()
@@ -777,20 +780,23 @@ export async function getFee(
         var feeInNativeCurrency = ((parseFloat(nativeGasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(8).toString();
         var tokenFeeInNativeCurrency = ((parseFloat(tokenGasLimit) * parseFloat(gasPrice)) /  Math.pow(10, 9)).toFixed(8).toString();
 
-        var nativeExchangeRate = ticker.find(({ symbol }) =>  symbol === `BNBUSDT`)['lastPrice'];
+        // var nativeExchangeRate = ticker.find(({ symbol }) =>  symbol === `BNBUSDT`)['lastPrice'];
+        var nativeExchangeRate = await getExchangeRate(Currency['ETH'], Fiat['USD'])
 
-        var nativeFeeInUsd = (parseFloat(nativeExchangeRate) * parseFloat(feeInNativeCurrency)).toString()
-        var tokenFeeInUsd = (parseFloat(nativeExchangeRate) * parseFloat(tokenFeeInNativeCurrency)).toString()
+        var nativeFeeInUsd = (parseFloat(nativeExchangeRate?.value) * parseFloat(feeInNativeCurrency)).toString()
+        var tokenFeeInUsd = (parseFloat(nativeExchangeRate?.value) * parseFloat(tokenFeeInNativeCurrency)).toString()
 
-        var tokenExchangeRate = '1';
+        var tokenExchangeRate: any = '1';
         var feeInTokenCurrency = '0';
-        var token = '';
+        var token: any = '';
 
         if(currency.token !== 'bsc') {
           token = currency.currency?.toUpperCase();
 
           if(!["USDT", "USDC", "BUSD"].includes(token)) {
-            tokenExchangeRate = ticker.find(({ symbol }) =>  symbol === `${token}USDT`)['lastPrice']
+            // tokenExchangeRate = ticker.find(({ symbol }) =>  symbol === `${token}USDT`)['lastPrice']
+            tokenExchangeRate = await getExchangeRate(Currency[token.toUpperCase()], Fiat['USD'])
+            tokenExchangeRate = tokenExchangeRate?.value
           }
 
           feeInTokenCurrency = (parseFloat(tokenFeeInUsd) / parseFloat(tokenExchangeRate)).toString()
@@ -828,19 +834,21 @@ export async function getFee(
       case 'xrp':
         return await xrpGetFee()
       case 'trx':
-        var exchangeRate = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`)['lastPrice'];
+        // var exchangeRate = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`)['lastPrice'];
+        var exchangeRate = await getExchangeRate(Currency[currency.currency?.toUpperCase()], Fiat['USD'])
 
         return {
           fee: 1,
-          feeInUsd: (parseFloat(exchangeRate) * 1).toString(),
+          feeInUsd: (parseFloat(exchangeRate?.value) * 1).toString(),
           exchangeRate
         }
       case 'bch':
-        var exchangeRate = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`)['lastPrice'];
+        // var exchangeRate = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`)['lastPrice'];
+        var exchangeRate = await getExchangeRate(Currency[currency.currency?.toUpperCase()], Fiat['USD'])
 
         return {
           fee: 0.0003,
-          feeInUsd: (parseFloat(exchangeRate) * 1).toString(),
+          feeInUsd: (parseFloat(exchangeRate?.value) * 1).toString(),
           exchangeRate
         }
       case 'btc':
@@ -867,8 +875,11 @@ export async function getFee(
 
         let fee = parseFloat(estimatedFee['medium']).toFixed(7)
 
-        var baseCurrencyPrice = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`);
-        var exchangeRate = baseCurrencyPrice['lastPrice'];
+        // var baseCurrencyPrice = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`);
+        // var exchangeRate = baseCurrencyPrice['lastPrice'];
+
+        var exchangeRate = await getExchangeRate(Currency[currency.currency?.toUpperCase()], Fiat['USD'])
+
 
         fee = fee ? fee : '0.00003'
         
@@ -877,7 +888,7 @@ export async function getFee(
         return {
           native: {
             fee,
-            feeInUsd: (parseFloat(exchangeRate) * parseFloat(fee)).toString(),
+            feeInUsd: (parseFloat(exchangeRate?.value) * parseFloat(fee)).toString(),
             exchangeRate
           }
         }
