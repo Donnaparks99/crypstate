@@ -660,6 +660,8 @@ export async function getFee(
 
       }, [])
 
+      console.log(ticker);
+
       ticker = ticker?.reduce(function (p, c) {
 
         if(currencyPairs.includes(c.symbol)) {
