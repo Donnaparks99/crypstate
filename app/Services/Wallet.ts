@@ -658,7 +658,7 @@ export async function getFee(
 
       }, [])
 
-      ticker = ticker.reduce(function (p, c) {
+      ticker = ticker?.reduce(function (p, c) {
 
         if(currencyPairs.includes(c.symbol)) {
           return [
