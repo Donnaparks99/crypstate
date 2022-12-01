@@ -640,6 +640,8 @@ export async function getFee(
 
       ticker = await newPriceTicker.json()
 
+      console.log(ticker);
+
       let currenciesModel = await CurrencyModel.query().select(['currency']);
 
       let currencyPairs = await currenciesModel.reduce(function (p, c) {
