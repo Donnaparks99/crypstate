@@ -14,6 +14,7 @@ export default class AccountsController {
       })]),
       webhook_endpoint: schema.string(),
       environment: schema.string.optional(),
+      category: schema.string.optional(),
     })
 
     try {
@@ -33,6 +34,7 @@ export default class AccountsController {
       environment: request.all().environment,
       withdrawal_fee_type: request.all().withdrawal_fee_type,
       withdrawal_fee: request.all().withdrawal_fee,
+      category: request.all().category?.toLowerCase()
     })
 
     if (account) {
@@ -45,7 +47,8 @@ export default class AccountsController {
 
   public async allAccountsBalance({ request, response }: HttpContextContract) {
     var requestData = schema.create({
-      currency: schema.string()
+      currency: schema.string(),
+      category: schema.string.optional(),
     })
 
     try {
@@ -64,7 +67,15 @@ export default class AccountsController {
       return response.status(422).json(currency)
     }
 
-    const accounts = await Account.query().preload('wallets')
+    let accounts: Array<Account>
+
+    if(request.all()?.category?.length > 1) {
+      accounts = await Account.query().preload('wallets').where("category", request.all().category)
+    } else {
+      accounts = await Account.query().preload('wallets')
+    }
+
+    // const accounts = 
 
     const walletBalance = [];
     

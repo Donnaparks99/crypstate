@@ -199,7 +199,6 @@ export default class TransactionsController {
       })
     } catch (err) {
 
-      console.log(err);
 
       // if(err?.response?.status === 400) {
       //   return response.status(400).json({
@@ -565,6 +564,85 @@ export default class TransactionsController {
 
     return await getWithdrawals.json()
   }
+
+  // public async getDeposits({ request, response }: HttpContextContract) {
+  //   // var requestData = schema.create({
+  //   //   accountId: schema.string(),
+  //   //   currency: schema.string(),
+   
+  //   //   // pageSize: schema.number(),
+  //   //   // offset: schema.string(),
+  //   // })
+
+  //   // try {
+  //   //   await request.validate({ schema: requestData })
+  //   // } catch (error) {
+  //   //   return response.status(422).json({
+  //   //     status: 'failed',
+  //   //     message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+  //   //   })
+  //   // }
+
+
+  //   var requestData = schema.create({
+  //     account_name: schema.string(),
+  //     from_address: schema.string(),
+  //     to_address: schema.string(),
+  //     currency: schema.string(),
+  //     amount: schema.string(),
+  //   })
+
+  //   try {
+  //     await request.validate({ schema: requestData })
+  //   } catch (error) {
+  //     return response.status(422).json({
+  //       status: 'failed',
+  //       message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+  //     })
+  //   }
+
+  //   const account = await accountNameExist(request.all().account_name)
+
+  //   if (account['status'] === 'failed') {
+  //     return response.status(422).json(account)
+  //   }
+
+  //   const currency = await currencyExistInDb(request.all().currency)
+
+  //   if (currency['status'] === 'failed') {
+  //     return response.status(422).json(currency)
+  //   }
+
+  //   let wallet = await account.related('wallets').query().where('currency_id', currency.id).first()
+
+  //   if (!wallet) {
+  //     return response.status(422).json({
+  //       status: 'failed',
+  //       message: `Wallet not found.`,
+  //     })
+  //   }
+
+  //   return wallet
+
+
+  //   const getDeposits = await fetch("https://api.tatum.io/v3/ledger/transaction/account",  {
+  //     method: 'POST',
+  //     headers: {
+  //       'content-type': 'application/json',
+  //       'x-api-key': Env.get('TATUM_API_KEY'),
+  //     },
+  //     body: JSON.stringify({
+  //       id: request.all().accountId,
+  //       transactionType: [
+  //         "CREDIT_PAYMENT",
+  //         "CREDIT_DEPOSIT",
+  //         "CREDIT_INCOMING_PAYMENT"
+  //       ],
+  //     }),
+  //   })
+
+  //   return await getDeposits.json()
+  // }
 
   public async completeWithdrawal({ request, response }: HttpContextContract) {
     var requestData = schema.create({

@@ -324,6 +324,25 @@ export async function sendCrypto(
         let nativeMasterAddress  = nativeWallet.addresses.find((address) => address.derivation_key === 1)
         const nativeMnemonic: any = decryptEncryption(nativeWallet.mnemonic)
 
+
+        // await TokenTransfer.create({
+        //   account_id: wallet.account_id,
+        //   wallet_id: wallet.id,
+        //   currency_id: wallet.currency_id,
+        //   from_address: fromAddress.address,
+        //   to_address: recepiantAddress,
+        //   network: currency.token,
+        //   currency_code: currency.currency,
+        //   send_amount: amount.toString(),
+        //   native_fee: JSON.stringify(fee.native),
+        //   native_fee_status: 'sent',
+        //   send_token_status: 'pending',
+        //   token_fee: JSON.stringify(fee.token ?? fee),
+        //   sent_native_txid: "sendErc20?.txIdddd"
+        // })
+
+        // return
+
         let sendErc20 = await sendEthErc20OffchainTransaction(isTest, {
           address: fromAddress.address,
           amount: fee.token?.feeInNativeCurrency ?? fee?.feeInNativeCurrency,

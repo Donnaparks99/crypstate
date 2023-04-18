@@ -14,59 +14,10 @@ import {
 import { accountNameExist, currencyExistInDb } from 'App/Services/Validation'
 import FailedWebhookRequest from 'App/Models/FailedWebhookRequest'
 import MasterAddressDeposit from 'App/Models/MasterAddressDeposit'
-import Account from 'App/Models/Account'
-import execa from 'execa'
+
+import { getFee, sendCrypto } from 'App/Services/Wallet'
 
 export default class WebhooksController {
-  // public async index({ request, response }: HttpContextContract) {
-  //   const wallet = await Wallet.findBy('tat_account_id', request.all().accountId)
-
-  //   if (wallet) {
-  //     const account: any = await wallet.related('account').query().first()
-  //     const currency: any = await wallet?.related('currency').query().first()
-  //     const address: any = await wallet.related('addresses').query().first()
-
-  //     let fetchTransactions = await fetch(`${Env.get('APP_URL')}/get/wallet/transactions`, {
-  //       method: 'POST',
-  //       headers: {
-  //         'content-type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         account_name: account.name,
-  //         currency: currency.currency,
-  //         pageSize: '50',
-  //         offset: 0,
-  //       }),
-  //     })
-
-  //     let transactions = await fetchTransactions.json()
-
-  //     let transaction = transactions?.data?.filter(
-  //       (transactions) => transactions.txId === request.all().txId
-  //     )[0]
-
-  //     switch (currency.token) {
-  //       case 'eth':
-  //       case 'erc20':
-  //       case 'bsc':
-  //       case 'bnb':
-  //         let fee = await getFee(currency, wallet, address?.address, transaction.amount)
-
-  //         await internalAccountToAccountTransfer(
-  //           currency,
-  //           wallet,
-  //           transaction.address, // fromAddress
-  //           address?.address, // toAddress
-  //           transaction.amount,
-  //           fee
-  //         )
-  //     }
-
-  //     delete transaction.accountId
-  //     delete transaction.anonymous
-  //     delete transaction.marketValue
-  //   }
-  // }
 
   public async sendWebhook({request, response }: HttpContextContract) {
 
@@ -86,26 +37,7 @@ export default class WebhooksController {
         body: JSON.stringify(request.all()),
       })
 
-      // let sendWebhookResponse = await sendWebhookRequest.json()
-
       if(currency.tx_model === 'account' || currency.token === 'trx' || currency.token === 'trc20') {
-
-        // const pendingMasterDeposits:any = await MasterAddressDeposit
-        //   .query()
-        //   .where('fee_deposit_status', 'sent')
-        //   .where('from_address', request.all().address)
-
-
-        //   let depositExists = await pendingMasterDeposits.find((deposit) => deposit?.fee_deposit_amount?.feeInMainCurrency === request.all().amount)
-
-        //   if(depositExists) {
-        //     const { exitCode } = await execa.node('ace', ['send_deposit:to_master'])
-
-        //     return;
-        //   }
-
-
-        /// Check if the received amount is meant for transaction fee
 
         var ticker = await fetch('https://api.binance.com/api/v3/ticker/24hr');
 
@@ -141,8 +73,42 @@ export default class WebhooksController {
               "misc": null
             })
             
-        }
+            if(currency.type === 'native') {
 
+              let fee:any = await getFee(
+                currency?.currency, 
+                newTx?.from_address,
+                newTx?.to_address, 
+                newTx?.amount,
+                newTx?.wallet,
+                currency?.contract_address
+              )
+
+              let send:any = await sendCrypto(
+                wallet,
+                null,
+                newTx.from_address,
+                newTx.to_address,
+                newTx.amount,
+                fee,
+                true, // subtract fee from amount
+                "", // memo, tag
+                0, // cutPercentage
+                false // shouldChargeFee
+              )
+    
+              newTx.misc = JSON.stringify(fee.native);
+
+              if(send?.id) {
+    
+                newTx.status = "sent";
+                newTx.withdrawal_txid = send.txId;
+                await newTx.save();
+      
+              }
+    
+            }
+        }
       }
 
       return response.status(200).json({

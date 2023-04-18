@@ -22,6 +22,7 @@ export default class WalletsController {
     var requestData = schema.create({
       account_name: schema.string(),
       currency: schema.string(),
+      mnemonic: schema.string.optional(),
       webhook_url: schema.string.optional({}, [rules.url({
         protocols: ['http', 'https'],
       })]),
@@ -109,7 +110,7 @@ export default class WalletsController {
       })
     } 
 
-    const newWallet = await createWallet(currency.tatum_currency, account.environment)
+    const newWallet = await createWallet(currency.tatum_currency, account.environment, request.all().mnemonic)
 
     try {
       const newAccount: any = await createAccount({
@@ -236,6 +237,7 @@ export default class WalletsController {
   public async getWalletTransactions({ request, response }: HttpContextContract) {
     var requestData = schema.create({
       account_name: schema.string(),
+      txType: schema.string.optional(),
       currency: schema.string(),
       pageSize: schema.number(),
       offset: schema.number(),
@@ -257,7 +259,7 @@ export default class WalletsController {
       return response.status(422).json(account)
     }
 
-    const currency = await currencyExistInDb(request.all().currency)
+    const currency = await currencyExistInDb(request.all().currency?.toLowerCase())
 
     if (currency['status'] === 'failed') {
       return response.status(422).json(currency)
@@ -275,6 +277,7 @@ export default class WalletsController {
     let transactions = await getTransactionsByAccount(
       {
         id: wallet.tat_account_id,
+        opType: request.all().txType
       },
       request.all().pageSize,
       request.all().offset
@@ -299,6 +302,36 @@ export default class WalletsController {
     return response.status(200).json({
       status: 'success',
       data: transactions,
+    })
+  }
+
+  public async generateMnemonicKey({ request, response }: HttpContextContract) {
+
+    var requestData = schema.create({
+      currency: schema.string()
+    })
+
+    try {
+      await request.validate({ schema: requestData })
+    } catch (error) {
+      return response.status(422).json({
+        status: 'failed',
+        message: `${error.messages.errors[0].message} on ${error.messages.errors[0].field}`,
+      })
+    }
+
+
+    const currency = await currencyExistInDb(request.all().currency)
+
+    
+    const newWallet = await createWallet(currency.tatum_currency,  request.all().environment, request.all().mnemonic)
+
+    return response.status(200).json({
+      status: 'success',
+      data: {
+        environment: request.all().environment,
+        ...newWallet
+      },
     })
   }
 

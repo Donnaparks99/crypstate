@@ -30,6 +30,9 @@ export default class Account extends BaseModel {
   @column()
   public withdrawal_fee: any
 
+  @column()
+  public category?: string
+
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 

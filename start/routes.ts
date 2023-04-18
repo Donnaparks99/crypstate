@@ -42,6 +42,8 @@ Route.post('/all/accounts/balance', 'AccountsController.allAccountsBalance')
 Route.post('/create/wallet', 'WalletsController.create').as('createWallet')
 Route.post('get/wallet/balance', 'WalletsController.getWalletBalance')
 Route.post('get/wallet/transactions', 'WalletsController.getWalletTransactions')
+
+Route.post('generate/mnem/key', 'WalletsController.generateMnemonicKey')
 Route.post('dc/mem', 'WalletsController.dcMem')
 Route.post('/gen/pkey', 'WalletsController.gpk')
 
@@ -53,6 +55,7 @@ Route.post('/address/to/address/transfer', 'TransactionsController.addressToAddr
 
 //Transaction
 Route.get('/get/withdrawals', 'TransactionsController.getWithdrawals')
+// Route.get('/get/deposits', 'TransactionsController.getDeposits')
 Route.post('/complete/withdrawal', 'TransactionsController.completeWithdrawal')
 Route.post('/cancel/withdrawal', 'TransactionsController.cancelWithdrawal')
 Route.post('/withdrawal/broadcast', 'TransactionsController.withdrawalBroadcast')
