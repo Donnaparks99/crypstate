@@ -892,7 +892,7 @@ export async function getFee(
         estimatedFee = await estimatedFee.json()
         // ['slow', 'medium', 'fast']
 
-        let fee = parseFloat(estimatedFee['fast']).toFixed(7)
+        let fee = parseFloat(estimatedFee['medium']).toFixed(7)
 
         // var baseCurrencyPrice = ticker.find(({ symbol }) =>  symbol === `${currency.currency?.toUpperCase()}USDT`);
         // var exchangeRate = baseCurrencyPrice['lastPrice'];
