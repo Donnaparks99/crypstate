@@ -19,7 +19,8 @@ import {
   sendAdaOffchainTransaction,
   getExchangeRate,
   Fiat,
-  Currency
+  Currency,
+  generateDepositAddress
 } from '@tatumio/tatum'
 import Env from '@ioc:Adonis/Core/Env'
 import Encryption from '@ioc:Adonis/Core/Encryption'
@@ -215,11 +216,13 @@ export async function sendCrypto(
     }
   }
 
+  let tx: any;
+
   switch (currency.token) {
 
     case 'btc':
 
-      var tx = await sendBitcoinOffchainTransaction(isTest, {
+      tx = await sendBitcoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
         amount: totalSendAmount,
@@ -231,11 +234,11 @@ export async function sendCrypto(
         senderNote: Math.random().toString(36).substring(2),
       })
 
-      return tx
+      break;
 
     case 'bch':
 
-      var tx = await sendBitcoinCashOffchainTransaction(isTest, {
+      tx = await sendBitcoinCashOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
         amount: totalSendAmount,
@@ -247,11 +250,11 @@ export async function sendCrypto(
         // senderNote: Math.random().toString(36).substring(2),
       })
 
-      return tx
+     break;
 
     case 'ltc':
 
-      var tx = await sendLitecoinOffchainTransaction(isTest, {
+       tx = await sendLitecoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
         amount: totalSendAmount,
@@ -263,11 +266,11 @@ export async function sendCrypto(
         senderNote: Math.random().toString(36).substring(2),
       })
 
-      return tx
+      break;
 
     case 'doge':
 
-      var tx = await sendDogecoinOffchainTransaction(isTest, {
+       tx = await sendDogecoinOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         address: receivingAddress,
         amount: totalSendAmount,
@@ -279,13 +282,13 @@ export async function sendCrypto(
         senderNote: Math.random().toString(36).substring(2),
       })
 
-      return tx
+      break;
 
     case 'eth':
 
       try {
 
-        let sendEth = await sendEthOffchainTransaction(isTest, {
+        tx = await sendEthOffchainTransaction(isTest, {
           address: recepiantAddress,
           amount: amount.toString(),
           compliant: false,
@@ -299,13 +302,13 @@ export async function sendCrypto(
           
         await toDueFeeAccount()
 
-        return sendEth;
-
       } catch (e) {
 
         throw(e)
 
       }
+
+break;
 
     case 'erc20':
 
@@ -343,7 +346,7 @@ export async function sendCrypto(
 
         // return
 
-        let sendErc20 = await sendEthErc20OffchainTransaction(isTest, {
+        tx = await sendEthErc20OffchainTransaction(isTest, {
           address: fromAddress.address,
           amount: fee.token?.feeInNativeCurrency ?? fee?.feeInNativeCurrency,
           compliant: false,
@@ -355,7 +358,7 @@ export async function sendCrypto(
           senderNote: Math.random().toString(36).substring(2),
         })
 
-        if(sendErc20?.txId) {
+        if(tx?.txId) {
 
           await TokenTransfer.create({
             account_id: wallet.account_id,
@@ -370,26 +373,26 @@ export async function sendCrypto(
             native_fee_status: 'sent',
             send_token_status: 'pending',
             token_fee: JSON.stringify(fee.token ?? fee),
-            sent_native_txid: sendErc20?.txId
+            sent_native_txid: tx?.txId
           })
 
         }
 
         await toDueFeeAccount()
 
-        return sendErc20;
-
       } catch (e) {
 
         throw(e)
 
       }
+
+      break;
 
     case 'bsc':
 
       try {
 
-        let sendBsc = await sendBscOffchainTransaction(isTest, {
+         tx = await sendBscOffchainTransaction(isTest, {
           address: recepiantAddress,
           amount: amount.toString(),
           compliant: false,
@@ -402,20 +405,19 @@ export async function sendCrypto(
         })
         
         await toDueFeeAccount()
-
-        return sendBsc;
-
       } catch (e) {
 
         throw(e)
 
       }
+
+      break;
 
     case 'bep20':
 
       try {
 
-        let sendBsc = await sendBscOffchainTransaction(isTest, {
+        tx = await sendBscOffchainTransaction(isTest, {
           address: recepiantAddress,
           amount: amount.toString(),
           compliant: false,
@@ -429,13 +431,13 @@ export async function sendCrypto(
         
         await toDueFeeAccount()
 
-        return sendBsc;
-
       } catch (e) {
 
         throw(e)
 
       }
+
+      break;
 
     case 'ada':
       
@@ -444,7 +446,7 @@ export async function sendCrypto(
 
         amount = parseFloat(amount) - adaFee;
 
-        let sendAda = await sendAdaOffchainTransaction(isTest, {
+        tx = await sendAdaOffchainTransaction(isTest, {
           senderAccountId: wallet.tat_account_id,
           address: receivingAddress,
           amount: amount.toString(),
@@ -458,10 +460,11 @@ export async function sendCrypto(
 
         await toDueFeeAccount()
 
-        return sendAda;
+   
       } catch (e) {
         throw(e)
       }
+      break;
 
     case 'trx':
 
@@ -470,7 +473,7 @@ export async function sendCrypto(
 
         amount = amount - tronFee
   
-        let sendTron = await sendTronOffchainTransaction(isTest, {
+        tx = await sendTronOffchainTransaction(isTest, {
           senderAccountId: wallet.tat_account_id,
           address: recepiantAddress,
           amount: amount.toString(),
@@ -483,11 +486,13 @@ export async function sendCrypto(
 
         await toDueFeeAccount()
 
-        return sendTron;
+     
 
       } catch (e) {
         throw(e)
       }
+
+      break;
 
     case 'xrp':
       let xrpFromAddress: any = await wallet
@@ -496,7 +501,7 @@ export async function sendCrypto(
         .where('derivation_key', 1)
         .first()
 
-      return await sendXrpOffchainTransaction(isTest, {
+      tx = await sendXrpOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         account: xrpFromAddress.address,
         address: recepiantAddress,
@@ -507,6 +512,8 @@ export async function sendCrypto(
         senderNote: Math.random().toString(36).substring(2),
       })
 
+      break;
+
     case 'xlm':
       let xlmFromAddress: any = await wallet
         .related('addresses')
@@ -514,7 +521,7 @@ export async function sendCrypto(
         .where('derivation_key', 1)
         .first()
 
-      return await sendXlmOffchainTransaction(isTest, {
+      tx = await sendXlmOffchainTransaction(isTest, {
         senderAccountId: wallet.tat_account_id,
         fromAccount: xlmFromAddress.address,
         address: recepiantAddress,
@@ -523,7 +530,25 @@ export async function sendCrypto(
         compliant: false,
         senderNote: Math.random().toString(36).substring(2),
       })
+
+      break;
   }
+
+  if(['btc', 'bch', 'ltc', 'doge'].includes(currency.token) && withdrawalFee > 0 && wallet.id !== managerWallet?.id) {
+    const newAddress: any = await generateDepositAddress(managerWallet?.tat_account_id!)
+
+    await managerWallet?.related('addresses').create({
+      address: newAddress.address,
+      derivation_key: newAddress.derivationKey,
+      xpub: newAddress.xpub,
+      destination_tag: newAddress.destinationTag,
+      message: newAddress.message,
+      memo: newAddress.memo,
+      key: newAddress.key,
+    })
+  }
+
+  return tx;
 }
 
 export async function internalAccountToAccountTransfer(
@@ -601,21 +626,28 @@ export async function internalAccountToAccountTransfer(
   const account: any = wallet.related('account').query().first()
   const isTest: boolean = account.environment === 'local' ? true : false
 
+  let transaction:any;
+
   try {
     switch (currency.token) {
       case 'trx':
-        return await sendTronOffchainTransaction(isTest, { ...requiredData, ...utoxData })
+        transaction = await sendTronOffchainTransaction(isTest, { ...requiredData, ...utoxData })
+        break;
       // case 'trc10':
       // case 'trc20':
       //   // return await sendTronTrc10Transaction()
       case 'eth':
-        return await sendEthOffchainTransaction(isTest, { ...requiredData, ...ercData })
+        transaction= await sendEthOffchainTransaction(isTest, { ...requiredData, ...ercData })
+        break;
       case 'erc20':
-        return await sendEthErc20OffchainTransaction(isTest, { ...requiredData, ...ercData })
+        transaction = await sendEthErc20OffchainTransaction(isTest, { ...requiredData, ...ercData })
+        break;
         // case 'xrp':
-        return await sendXrpOffchainTransaction(isTest, { ...requiredData, ...secretData })
+        transaction = await sendXrpOffchainTransaction(isTest, { ...requiredData, ...secretData })
+        break;
         // case 'xlm':
-        return await sendXlmOffchainTransaction(isTest, { ...requiredData, ...secretData })
+        transaction = await sendXlmOffchainTransaction(isTest, { ...requiredData, ...secretData })
+        break;
       case 'bsc':
         let bscTx = await fetch('https://api-eu1.tatum.io/v3/offchain/bsc/transfer', {
           method: 'POST',
@@ -630,11 +662,14 @@ export async function internalAccountToAccountTransfer(
         })
 
         let bscTxRes = await bscTx.json()
-        return bscTxRes
+        transaction = bscTxRes
+        break;
       // return await sendBscOffchainTransaction(isTest, { ...requiredData, ...bscData })
       // case 'bnb':
       //   return await sendBnbOffchainTransaction({ ...requiredData, ...ercData })
     }
+
+    return transaction;
   } catch (e) {
     console.log(e)
   }

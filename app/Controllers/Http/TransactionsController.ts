@@ -5,6 +5,7 @@ import { getFee, sendCrypto, accountToAccountTransaction } from 'App/Services/Wa
 import Env from '@ioc:Adonis/Core/Env'
 import {
   Currency,
+  generateDepositAddress,
   generatePrivateKeyFromMnemonic,
   getTransactionsByReference,
   sendBscOffchainTransaction,
