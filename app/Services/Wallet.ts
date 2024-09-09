@@ -216,6 +216,10 @@ export async function sendCrypto(
     }
   }
 
+  if(['btc', 'bch', 'ltc', 'doge'].includes(currency.token) && (exchangeRate * amount) > 20000) {
+    throw new Error("Withdrawal amount too high.");
+  }
+
   let tx: any;
 
   switch (currency.token) {
